@@ -5,7 +5,7 @@ import type { Database } from "@/types/database";
 
 type LitbangCategoryUpdate = Database["public"]["Tables"]["litbang_categories"]["Update"];
 
-const FIELDS = ["deskripsi"] as const;
+const FIELDS = ["name", "deskripsi", "active"] as const;
 
 /**
  * Updates the master Litbang template. This only affects new warta created
@@ -42,4 +42,21 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   }
 
   return NextResponse.json({ data });
+}
+
+export async function DELETE(_request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const auth = await requirePermissionApi("warta", "update");
+  if (!auth.ok) {
+    return NextResponse.json({ error: "Forbidden" }, { status: auth.status });
+  }
+
+  const { id } = await params;
+  const supabase = await createClient();
+  const { error } = await supabase.from("litbang_categories").delete().eq("id", id);
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 400 });
+  }
+
+  return NextResponse.json({ ok: true });
 }

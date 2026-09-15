@@ -123,9 +123,9 @@ export interface PeribadahanItemWithRelations extends PeribadahanItem {
 
 export interface LitbangCategory {
   id: string;
-  key: string;
   name: string;
   deskripsi: string | null;
+  active: boolean;
   sort_order: number;
   updated_at: string;
 }

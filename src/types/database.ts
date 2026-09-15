@@ -560,25 +560,25 @@ export interface Database {
       litbang_categories: {
         Row: {
           id: string;
-          key: string;
           name: string;
           deskripsi: string | null;
+          active: boolean;
           sort_order: number;
           updated_at: string;
         };
         Insert: {
           id?: string;
-          key: string;
           name: string;
           deskripsi?: string | null;
+          active?: boolean;
           sort_order?: number;
           updated_at?: string;
         };
         Update: {
           id?: string;
-          key?: string;
           name?: string;
           deskripsi?: string | null;
+          active?: boolean;
           sort_order?: number;
           updated_at?: string;
         };

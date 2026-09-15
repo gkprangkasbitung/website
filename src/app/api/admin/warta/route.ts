@@ -73,10 +73,13 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: insertError?.message ?? "Gagal membuat warta" }, { status: 400 });
   }
 
-  // Snapshot the current Litbang template into this warta's own independent rows.
+  // Snapshot the current (active) Litbang template into this warta's own
+  // independent rows. Inactive cards are skipped - they stay in the
+  // template for later reactivation but shouldn't appear in new warta.
   const { data: template } = await supabase
     .from("litbang_categories")
     .select("id, name, deskripsi, sort_order")
+    .eq("active", true)
     .order("sort_order");
 
   if (template && template.length > 0) {
