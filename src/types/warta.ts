@@ -17,13 +17,6 @@ export interface Warta {
   updated_at: string;
 }
 
-export interface JadwalFields {
-  hari: string | null;
-  jam: string | null;
-  tempat: string | null;
-  petugas: string | null;
-}
-
 export interface PeribadahanCategory {
   id: string;
   key: string;
@@ -76,19 +69,21 @@ export interface PeribadahanItemWithRelations extends PeribadahanItem {
   petugas: Pick<Jemaat, "id" | "nama"> | null;
 }
 
-export interface LitbangCategory extends JadwalFields {
+export interface LitbangCategory {
   id: string;
   key: string;
   name: string;
+  deskripsi: string | null;
   sort_order: number;
   updated_at: string;
 }
 
-export interface WartaLitbangItem extends JadwalFields {
+export interface WartaLitbangItem {
   id: string;
   warta_id: string;
   litbang_category_id: string | null;
   name: string;
+  deskripsi: string | null;
   sort_order: number;
 }
 
@@ -96,9 +91,31 @@ export interface SaranaDanaItem {
   id: string;
   key: string;
   name: string;
-  nominal: number;
+  saldo_awal: number;
   keterangan: string | null;
   updated_at: string;
+}
+
+export type SaranaDanaTransactionType = "masuk" | "keluar";
+
+export interface SaranaDanaTransaction {
+  id: string;
+  item_id: string;
+  tanggal: string;
+  tipe: SaranaDanaTransactionType;
+  jumlah: number;
+  keterangan: string | null;
+  created_by: string | null;
+  created_at: string;
+}
+
+/** Computed saldo_awal + sum(masuk) - sum(keluar), from the sarana_dana_balances view. */
+export interface SaranaDanaBalance {
+  id: string;
+  key: string;
+  name: string;
+  keterangan: string | null;
+  saldo: number;
 }
 
 export interface WartaKesaksianItem {

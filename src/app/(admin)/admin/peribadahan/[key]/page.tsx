@@ -1,3 +1,4 @@
+import { notFound } from "next/navigation";
 import { PeribadahanEditor } from "@/components/admin/peribadahan-editor";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -7,25 +8,38 @@ import { PERIBADAHAN_ITEM_SELECT } from "@/lib/peribadahan";
 import { getAuthenticatedUser, hasPermission, requirePermission } from "@/lib/rbac/dal";
 import { createClient } from "@/lib/supabase/server";
 
-export default async function PeribadahanPage({
+export default async function PeribadahanCategoryPage({
+  params,
   searchParams,
 }: {
+  params: Promise<{ key: string }>;
   searchParams: Promise<{ tanggal?: string }>;
 }) {
   await requirePermission("warta", "read");
   const currentUser = await getAuthenticatedUser();
   const canEdit = hasPermission(currentUser, "warta", "update");
 
+  const { key } = await params;
   const { tanggal } = await searchParams;
   const activeTanggal = tanggal || nextSundayIso();
 
   const supabase = await createClient();
-  const [{ data: categories }, { data: items }, { data: tempatList }, { data: jemaatList }] = await Promise.all([
-    supabase.from("peribadahan_categories").select("*").order("sort_order"),
+  const { data: category } = await supabase
+    .from("peribadahan_categories")
+    .select("*")
+    .eq("key", key)
+    .maybeSingle();
+
+  if (!category) {
+    notFound();
+  }
+
+  const [{ data: items }, { data: tempatList }, { data: jemaatList }] = await Promise.all([
     supabase
       .from("peribadahan_items")
       .select(PERIBADAHAN_ITEM_SELECT)
       .eq("tanggal", activeTanggal)
+      .eq("category_id", category.id)
       .order("sort_order"),
     supabase.from("tempat").select("*").order("sort_order"),
     supabase.from("jemaat").select(JEMAAT_SELECT_WITH_LABELS).order("nama"),
@@ -36,10 +50,10 @@ export default async function PeribadahanPage({
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold">Bidang Peribadahan</h1>
+        <h1 className="text-2xl font-semibold">{category.name}</h1>
         <p className="text-muted-foreground">
-          Jadwal per tanggal - baris yang sama juga muncul dan bisa diedit langsung dari warta
-          untuk tanggal yang sama, dan sebaliknya.
+          Jadwal khusus {category.name} per tanggal - baris yang sama juga muncul di halaman
+          Peribadahan (semua bidang) dan di warta untuk tanggal yang sama, dan sebaliknya.
         </p>
       </div>
 
@@ -58,7 +72,8 @@ export default async function PeribadahanPage({
       <PeribadahanEditor
         tanggal={activeTanggal}
         items={items ?? []}
-        categories={categories ?? []}
+        categories={[category]}
+        lockedCategoryId={category.id}
         tempatList={tempatList ?? []}
         jemaatList={jemaatWithLabels}
         disabled={!canEdit}

@@ -1,4 +1,4 @@
-import { JadwalEditor } from "@/components/admin/jadwal-editor";
+import { LitbangEditor } from "@/components/admin/litbang-editor";
 import { getAuthenticatedUser, hasPermission, requirePermission } from "@/lib/rbac/dal";
 import { createClient } from "@/lib/supabase/server";
 
@@ -23,7 +23,7 @@ export default async function LitbangTemplatePage() {
           langsung di tiap warta kalau perlu berbeda minggu itu.
         </p>
       </div>
-      <JadwalEditor
+      <LitbangEditor
         rows={categories ?? []}
         patchUrlBase="/api/admin/litbang-template"
         disabled={!canEdit}

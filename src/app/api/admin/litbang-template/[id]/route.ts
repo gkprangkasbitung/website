@@ -5,7 +5,7 @@ import type { Database } from "@/types/database";
 
 type LitbangCategoryUpdate = Database["public"]["Tables"]["litbang_categories"]["Update"];
 
-const FIELDS = ["hari", "jam", "tempat", "petugas"] as const;
+const FIELDS = ["deskripsi"] as const;
 
 /**
  * Updates the master Litbang template. This only affects new warta created

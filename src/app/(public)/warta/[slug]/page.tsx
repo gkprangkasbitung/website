@@ -1,4 +1,6 @@
 import { notFound } from "next/navigation";
+import { formatRupiah } from "@/lib/format";
+import { PERIBADAHAN_ITEM_SELECT } from "@/lib/peribadahan";
 import { createClient } from "@/lib/supabase/server";
 
 function JadwalTable({
@@ -41,8 +43,21 @@ function JadwalTable({
   );
 }
 
-function formatRupiah(n: number) {
-  return new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(n);
+function LitbangList({
+  items,
+}: {
+  items: { id: string; name: string; deskripsi: string | null }[];
+}) {
+  return (
+    <ol className="list-decimal space-y-4 pl-5">
+      {items.map((item) => (
+        <li key={item.id}>
+          <p className="font-medium">{item.name}</p>
+          {item.deskripsi && <p className="whitespace-pre-line text-sm">{item.deskripsi}</p>}
+        </li>
+      ))}
+    </ol>
+  );
 }
 
 export default async function PublicWartaDetailPage({
@@ -68,12 +83,10 @@ export default async function PublicWartaDetailPage({
     await Promise.all([
       supabase
         .from("peribadahan_items")
-        .select(
-          "*, category:peribadahan_categories(id, name, sort_order), tempat:tempat(id, nama), petugas:jemaat(id, nama)",
-        )
+        .select(PERIBADAHAN_ITEM_SELECT)
         .eq("tanggal", warta.tanggal_kebaktian)
         .order("sort_order"),
-      supabase.from("sarana_dana_items").select("*").order("key"),
+      supabase.from("sarana_dana_balances").select("*").order("key"),
       supabase.from("warta_litbang_items").select("*").eq("warta_id", warta.id).order("sort_order"),
       supabase.from("warta_kesaksian_items").select("*").eq("warta_id", warta.id).order("sort_order"),
     ]);
@@ -115,7 +128,7 @@ export default async function PublicWartaDetailPage({
       {(litbangItems ?? []).length > 0 && (
         <section className="space-y-2">
           <h2 className="text-xl font-semibold">Bidang Litbang</h2>
-          <JadwalTable rows={litbangItems ?? []} />
+          <LitbangList items={litbangItems ?? []} />
         </section>
       )}
 
@@ -125,7 +138,7 @@ export default async function PublicWartaDetailPage({
           {(saranaDana ?? []).map((item) => (
             <li key={item.id} className="flex justify-between border-b py-1 text-sm">
               <span>{item.name}</span>
-              <span className="font-medium">{formatRupiah(item.nominal)}</span>
+              <span className="font-medium">{formatRupiah(item.saldo)}</span>
             </li>
           ))}
         </ul>

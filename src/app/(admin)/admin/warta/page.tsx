@@ -31,7 +31,9 @@ export default async function WartaListPage() {
           <p className="text-muted-foreground">Buletin ibadah mingguan.</p>
         </div>
         {canCreate && (
-          <Button render={<Link href="/admin/warta/new" />}>Buat Warta Baru</Button>
+          <Button render={<Link href="/admin/warta/new" />} nativeButton={false}>
+            Buat Warta Baru
+          </Button>
         )}
       </div>
       <Table>
@@ -58,6 +60,7 @@ export default async function WartaListPage() {
                   size="sm"
                   variant="outline"
                   render={<Link href={`/admin/warta/${warta.id}`} />}
+                  nativeButton={false}
                 >
                   Edit
                 </Button>

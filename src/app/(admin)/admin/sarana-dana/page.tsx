@@ -8,18 +8,18 @@ export default async function SaranaDanaPage() {
   const canEdit = hasPermission(currentUser, "warta", "update");
 
   const supabase = await createClient();
-  const { data: items } = await supabase.from("sarana_dana_items").select("*").order("key");
+  const { data: balances } = await supabase.from("sarana_dana_balances").select("*").order("key");
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold">Bidang Sarana dan Dana</h1>
         <p className="text-muted-foreground">
-          Nilai ini ditampilkan langsung di setiap warta - perubahan di sini otomatis muncul di
-          warta yang sudah maupun akan diterbitkan.
+          Saldo dihitung otomatis dari transaksi pemasukan/pengeluaran - klik &quot;Lihat
+          Transaksi&quot; untuk mencatat pemasukan atau pengeluaran per pos.
         </p>
       </div>
-      <SaranaDanaEditor items={items ?? []} disabled={!canEdit} />
+      <SaranaDanaEditor items={balances ?? []} disabled={!canEdit} />
     </div>
   );
 }

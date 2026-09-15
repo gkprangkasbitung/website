@@ -1,9 +1,10 @@
 import { notFound } from "next/navigation";
 import { Separator } from "@/components/ui/separator";
-import { JadwalEditor } from "@/components/admin/jadwal-editor";
+import { LitbangEditor } from "@/components/admin/litbang-editor";
 import { PeribadahanEditor } from "@/components/admin/peribadahan-editor";
 import { SaranaDanaEditor } from "@/components/admin/sarana-dana-editor";
 import { JEMAAT_SELECT_WITH_LABELS, flattenJemaatLabels } from "@/lib/jemaat";
+import { PERIBADAHAN_ITEM_SELECT } from "@/lib/peribadahan";
 import { getAuthenticatedUser, hasPermission, requirePermission } from "@/lib/rbac/dal";
 import { createClient } from "@/lib/supabase/server";
 import { DeleteWartaButton } from "./delete-warta-button";
@@ -38,14 +39,12 @@ export default async function EditWartaPage({ params }: { params: Promise<{ id: 
     supabase.from("peribadahan_categories").select("*").order("sort_order"),
     supabase
       .from("peribadahan_items")
-      .select(
-        "*, category:peribadahan_categories(id, name, sort_order), tempat:tempat(id, nama), petugas:jemaat(id, nama)",
-      )
+      .select(PERIBADAHAN_ITEM_SELECT)
       .eq("tanggal", warta.tanggal_kebaktian)
       .order("sort_order"),
     supabase.from("tempat").select("*").order("sort_order"),
     supabase.from("jemaat").select(JEMAAT_SELECT_WITH_LABELS).order("nama"),
-    supabase.from("sarana_dana_items").select("*").order("key"),
+    supabase.from("sarana_dana_balances").select("*").order("key"),
     supabase.from("warta_litbang_items").select("*").eq("warta_id", id).order("sort_order"),
     supabase.from("warta_kesaksian_items").select("*").eq("warta_id", id).order("sort_order"),
   ]);
@@ -97,7 +96,7 @@ export default async function EditWartaPage({ params }: { params: Promise<{ id: 
             saja.
           </p>
         </div>
-        <JadwalEditor
+        <LitbangEditor
           rows={litbangItems ?? []}
           patchUrlBase={`/api/admin/warta/${warta.id}/litbang`}
           disabled={!canUpdate}

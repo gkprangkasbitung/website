@@ -5,7 +5,7 @@ import type { Database } from "@/types/database";
 
 type WartaLitbangItemUpdate = Database["public"]["Tables"]["warta_litbang_items"]["Update"];
 
-const FIELDS = ["name", "hari", "jam", "tempat", "petugas"] as const;
+const FIELDS = ["deskripsi"] as const;
 
 /**
  * Edits one litbang row that belongs to a single warta. This never touches

@@ -1,9 +1,7 @@
 import { NextResponse } from "next/server";
+import { PERIBADAHAN_ITEM_SELECT } from "@/lib/peribadahan";
 import { requirePermissionApi } from "@/lib/rbac/dal";
 import { createClient } from "@/lib/supabase/server";
-
-const SELECT_WITH_RELATIONS =
-  "*, category:peribadahan_categories(id, name, sort_order), tempat:tempat(id, nama), petugas:jemaat(id, nama)";
 
 /**
  * Lists Peribadahan items, optionally filtered to one date (`?tanggal=`).
@@ -22,7 +20,7 @@ export async function GET(request: Request) {
   const supabase = await createClient();
   let query = supabase
     .from("peribadahan_items")
-    .select(SELECT_WITH_RELATIONS)
+    .select(PERIBADAHAN_ITEM_SELECT)
     .order("sort_order");
 
   if (tanggal) query = query.eq("tanggal", tanggal);
@@ -72,7 +70,7 @@ export async function POST(request: Request) {
       petugas_id: body?.petugas_id ?? null,
       sort_order: count ?? 0,
     })
-    .select(SELECT_WITH_RELATIONS)
+    .select(PERIBADAHAN_ITEM_SELECT)
     .single();
 
   if (error) {

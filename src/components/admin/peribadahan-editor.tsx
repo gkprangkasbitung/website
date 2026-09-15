@@ -135,11 +135,13 @@ function ItemRow({
   tempatList,
   jemaatList,
   disabled,
+  showCategory,
 }: {
   item: PeribadahanItemWithRelations;
   tempatList: Tempat[];
   jemaatList: JemaatWithLabels[];
   disabled?: boolean;
+  showCategory: boolean;
 }) {
   const router = useRouter();
   const [values, setValues] = useState({
@@ -187,7 +189,7 @@ function ItemRow({
 
   return (
     <TableRow>
-      <TableCell className="font-medium">{item.category?.name ?? "-"}</TableCell>
+      {showCategory && <TableCell className="font-medium">{item.category?.name ?? "-"}</TableCell>}
       <TableCell>
         <Input
           value={values.label}
@@ -246,16 +248,18 @@ function ItemRow({
 function AddItemRow({
   tanggal,
   categories,
+  lockedCategoryId,
   tempatList,
   jemaatList,
 }: {
   tanggal: string;
   categories: PeribadahanCategory[];
+  lockedCategoryId?: string;
   tempatList: Tempat[];
   jemaatList: JemaatWithLabels[];
 }) {
   const router = useRouter();
-  const [categoryId, setCategoryId] = useState<string | null>(categories[0]?.id ?? null);
+  const [categoryId, setCategoryId] = useState<string | null>(lockedCategoryId ?? categories[0]?.id ?? null);
   const [values, setValues] = useState<{
     label: string;
     hari: string | null;
@@ -292,20 +296,22 @@ function AddItemRow({
 
   return (
     <TableRow>
-      <TableCell>
-        <Select value={categoryId ?? undefined} onValueChange={setCategoryId} disabled={isPending}>
-          <SelectTrigger className="w-32">
-            <SelectValue placeholder="Jenis" />
-          </SelectTrigger>
-          <SelectContent>
-            {categories.map((c) => (
-              <SelectItem key={c.id} value={c.id}>
-                {c.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </TableCell>
+      {!lockedCategoryId && (
+        <TableCell>
+          <Select value={categoryId ?? undefined} onValueChange={setCategoryId} disabled={isPending}>
+            <SelectTrigger className="w-32">
+              <SelectValue placeholder="Jenis" />
+            </SelectTrigger>
+            <SelectContent>
+              {categories.map((c) => (
+                <SelectItem key={c.id} value={c.id}>
+                  {c.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </TableCell>
+      )}
       <TableCell>
         <Input
           value={values.label}
@@ -358,6 +364,7 @@ export function PeribadahanEditor({
   tanggal,
   items,
   categories,
+  lockedCategoryId,
   tempatList,
   jemaatList,
   disabled,
@@ -365,15 +372,20 @@ export function PeribadahanEditor({
   tanggal: string;
   items: PeribadahanItemWithRelations[];
   categories: PeribadahanCategory[];
+  /** When set, this editor is scoped to one category: the Jenis column is
+   * hidden and every new row is created under this category. */
+  lockedCategoryId?: string;
   tempatList: Tempat[];
   jemaatList: JemaatWithLabels[];
   disabled?: boolean;
 }) {
+  const showCategory = !lockedCategoryId;
+
   return (
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead>Jenis</TableHead>
+          {showCategory && <TableHead>Jenis</TableHead>}
           <TableHead>Label</TableHead>
           <TableHead>Hari</TableHead>
           <TableHead>Jam</TableHead>
@@ -384,10 +396,23 @@ export function PeribadahanEditor({
       </TableHeader>
       <TableBody>
         {items.map((item) => (
-          <ItemRow key={item.id} item={item} tempatList={tempatList} jemaatList={jemaatList} disabled={disabled} />
+          <ItemRow
+            key={item.id}
+            item={item}
+            tempatList={tempatList}
+            jemaatList={jemaatList}
+            disabled={disabled}
+            showCategory={showCategory}
+          />
         ))}
         {!disabled && (
-          <AddItemRow tanggal={tanggal} categories={categories} tempatList={tempatList} jemaatList={jemaatList} />
+          <AddItemRow
+            tanggal={tanggal}
+            categories={categories}
+            lockedCategoryId={lockedCategoryId}
+            tempatList={tempatList}
+            jemaatList={jemaatList}
+          />
         )}
       </TableBody>
     </Table>

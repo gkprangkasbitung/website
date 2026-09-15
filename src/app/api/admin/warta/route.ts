@@ -76,7 +76,7 @@ export async function POST(request: Request) {
   // Snapshot the current Litbang template into this warta's own independent rows.
   const { data: template } = await supabase
     .from("litbang_categories")
-    .select("id, name, hari, jam, tempat, petugas, sort_order")
+    .select("id, name, deskripsi, sort_order")
     .order("sort_order");
 
   if (template && template.length > 0) {
@@ -85,10 +85,7 @@ export async function POST(request: Request) {
         warta_id: warta.id,
         litbang_category_id: item.id,
         name: item.name,
-        hari: item.hari,
-        jam: item.jam,
-        tempat: item.tempat,
-        petugas: item.petugas,
+        deskripsi: item.deskripsi,
         sort_order: item.sort_order,
       })),
     );

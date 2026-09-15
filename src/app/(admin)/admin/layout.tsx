@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getAuthenticatedUser, hasPermission } from "@/lib/rbac/dal";
 import { logout } from "@/app/login/actions";
+import { createClient } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/button";
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -8,17 +9,50 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   const canReadWarta = hasPermission(user, "warta", "read");
 
+  let peribadahanCategories: { key: string; name: string }[] = [];
+  let saranaDanaItems: { key: string; name: string }[] = [];
+  if (canReadWarta) {
+    const supabase = await createClient();
+    const [{ data: peribadahan }, { data: saranaDana }] = await Promise.all([
+      supabase.from("peribadahan_categories").select("key, name").order("sort_order"),
+      supabase.from("sarana_dana_items").select("key, name").order("key"),
+    ]);
+    peribadahanCategories = peribadahan ?? [];
+    saranaDanaItems = saranaDana ?? [];
+  }
+
   const navItems = [
-    { href: "/admin", label: "Dashboard", show: true },
-    { href: "/admin/warta", label: "Warta", show: canReadWarta },
-    { href: "/admin/peribadahan", label: "Peribadahan", show: canReadWarta },
-    { href: "/admin/litbang", label: "Litbang", show: canReadWarta },
-    { href: "/admin/sarana-dana", label: "Sarana & Dana", show: canReadWarta },
-    { href: "/admin/tempat", label: "Tempat", show: canReadWarta },
-    { href: "/admin/jemaat", label: "Jemaat", show: canReadWarta },
-    { href: "/admin/label-jemaat", label: "Label Jemaat", show: canReadWarta },
-    { href: "/admin/users", label: "Pengguna", show: hasPermission(user, "users", "read") },
-    { href: "/admin/roles", label: "Roles & Permissions", show: hasPermission(user, "roles", "read") },
+    { href: "/admin", label: "Dashboard", show: true, children: [] as { href: string; label: string }[] },
+    { href: "/admin/warta", label: "Warta", show: canReadWarta, children: [] },
+    {
+      href: "/admin/peribadahan",
+      label: "Peribadahan",
+      show: canReadWarta,
+      children: peribadahanCategories.map((c) => ({
+        href: `/admin/peribadahan/${c.key}`,
+        label: c.name,
+      })),
+    },
+    { href: "/admin/litbang", label: "Litbang", show: canReadWarta, children: [] },
+    {
+      href: "/admin/sarana-dana",
+      label: "Sarana & Dana",
+      show: canReadWarta,
+      children: saranaDanaItems.map((item) => ({
+        href: `/admin/sarana-dana/${item.key}`,
+        label: item.name,
+      })),
+    },
+    { href: "/admin/tempat", label: "Tempat", show: canReadWarta, children: [] },
+    { href: "/admin/jemaat", label: "Jemaat", show: canReadWarta, children: [] },
+    { href: "/admin/label-jemaat", label: "Label Jemaat", show: canReadWarta, children: [] },
+    { href: "/admin/users", label: "Pengguna", show: hasPermission(user, "users", "read"), children: [] },
+    {
+      href: "/admin/roles",
+      label: "Roles & Permissions",
+      show: hasPermission(user, "roles", "read"),
+      children: [],
+    },
   ].filter((item) => item.show);
 
   return (
@@ -27,13 +61,24 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         <div className="mb-6 px-2 text-sm font-semibold">GKP Rangkasbitung — Admin</div>
         <nav className="space-y-1">
           {navItems.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className="block rounded px-2 py-1.5 text-sm hover:bg-muted"
-            >
-              {item.label}
-            </Link>
+            <div key={item.href}>
+              <Link href={item.href} className="block rounded px-2 py-1.5 text-sm hover:bg-muted">
+                {item.label}
+              </Link>
+              {item.children.length > 0 && (
+                <div className="ml-3 space-y-1 border-l pl-2">
+                  {item.children.map((child) => (
+                    <Link
+                      key={child.href}
+                      href={child.href}
+                      className="block rounded px-2 py-1 text-sm text-muted-foreground hover:bg-muted hover:text-foreground"
+                    >
+                      {child.label}
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
           ))}
         </nav>
       </aside>

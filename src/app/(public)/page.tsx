@@ -15,7 +15,9 @@ export default function HomePage() {
           </code>{" "}
           dengan informasi jemaat, jadwal ibadah, dan berita terbaru.
         </p>
-        <Button render={<a href="/jadwal-ibadah" />}>Lihat Jadwal Ibadah</Button>
+        <Button render={<a href="/jadwal-ibadah" />} nativeButton={false}>
+          Lihat Jadwal Ibadah
+        </Button>
       </div>
     </div>
   );

@@ -363,7 +363,7 @@ export interface Database {
           id: string;
           key: string;
           name: string;
-          nominal: number;
+          saldo_awal: number;
           keterangan: string | null;
           updated_at: string;
         };
@@ -371,7 +371,7 @@ export interface Database {
           id?: string;
           key: string;
           name: string;
-          nominal?: number;
+          saldo_awal?: number;
           keterangan?: string | null;
           updated_at?: string;
         };
@@ -379,10 +379,63 @@ export interface Database {
           id?: string;
           key?: string;
           name?: string;
-          nominal?: number;
+          saldo_awal?: number;
           keterangan?: string | null;
           updated_at?: string;
         };
+        Relationships: [];
+      };
+      sarana_dana_transactions: {
+        Row: {
+          id: string;
+          item_id: string;
+          tanggal: string;
+          tipe: "masuk" | "keluar";
+          jumlah: number;
+          keterangan: string | null;
+          created_by: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          item_id: string;
+          tanggal: string;
+          tipe: "masuk" | "keluar";
+          jumlah: number;
+          keterangan?: string | null;
+          created_by?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          item_id?: string;
+          tanggal?: string;
+          tipe?: "masuk" | "keluar";
+          jumlah?: number;
+          keterangan?: string | null;
+          created_by?: string | null;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "sarana_dana_transactions_item_id_fkey";
+            columns: ["item_id"];
+            isOneToOne: false;
+            referencedRelation: "sarana_dana_items";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      sarana_dana_balances: {
+        Row: {
+          id: string;
+          key: string;
+          name: string;
+          keterangan: string | null;
+          saldo: number;
+        };
+        Insert: never;
+        Update: never;
         Relationships: [];
       };
       litbang_categories: {
@@ -390,10 +443,7 @@ export interface Database {
           id: string;
           key: string;
           name: string;
-          hari: string | null;
-          jam: string | null;
-          tempat: string | null;
-          petugas: string | null;
+          deskripsi: string | null;
           sort_order: number;
           updated_at: string;
         };
@@ -401,10 +451,7 @@ export interface Database {
           id?: string;
           key: string;
           name: string;
-          hari?: string | null;
-          jam?: string | null;
-          tempat?: string | null;
-          petugas?: string | null;
+          deskripsi?: string | null;
           sort_order?: number;
           updated_at?: string;
         };
@@ -412,10 +459,7 @@ export interface Database {
           id?: string;
           key?: string;
           name?: string;
-          hari?: string | null;
-          jam?: string | null;
-          tempat?: string | null;
-          petugas?: string | null;
+          deskripsi?: string | null;
           sort_order?: number;
           updated_at?: string;
         };
@@ -427,10 +471,7 @@ export interface Database {
           warta_id: string;
           litbang_category_id: string | null;
           name: string;
-          hari: string | null;
-          jam: string | null;
-          tempat: string | null;
-          petugas: string | null;
+          deskripsi: string | null;
           sort_order: number;
         };
         Insert: {
@@ -438,10 +479,7 @@ export interface Database {
           warta_id: string;
           litbang_category_id?: string | null;
           name: string;
-          hari?: string | null;
-          jam?: string | null;
-          tempat?: string | null;
-          petugas?: string | null;
+          deskripsi?: string | null;
           sort_order?: number;
         };
         Update: {
@@ -449,10 +487,7 @@ export interface Database {
           warta_id?: string;
           litbang_category_id?: string | null;
           name?: string;
-          hari?: string | null;
-          jam?: string | null;
-          tempat?: string | null;
-          petugas?: string | null;
+          deskripsi?: string | null;
           sort_order?: number;
         };
         Relationships: [

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
@@ -13,15 +14,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import type { SaranaDanaItem } from "@/types/warta";
+import { formatRupiah } from "@/lib/format";
+import type { SaranaDanaBalance } from "@/types/warta";
 
-function formatRupiah(n: number) {
-  return new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", maximumFractionDigits: 0 }).format(n);
-}
-
-function SaranaDanaRow({ item, disabled }: { item: SaranaDanaItem; disabled?: boolean }) {
+function SaranaDanaRow({ item, disabled }: { item: SaranaDanaBalance; disabled?: boolean }) {
   const router = useRouter();
-  const [nominal, setNominal] = useState(String(item.nominal));
   const [keterangan, setKeterangan] = useState(item.keterangan ?? "");
   const [isPending, startTransition] = useTransition();
 
@@ -30,7 +27,7 @@ function SaranaDanaRow({ item, disabled }: { item: SaranaDanaItem; disabled?: bo
       const res = await fetch(`/api/admin/sarana-dana/${item.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nominal, keterangan }),
+        body: JSON.stringify({ keterangan }),
       });
 
       if (!res.ok) {
@@ -47,15 +44,7 @@ function SaranaDanaRow({ item, disabled }: { item: SaranaDanaItem; disabled?: bo
   return (
     <TableRow>
       <TableCell className="font-medium">{item.name}</TableCell>
-      <TableCell>
-        <Input
-          type="number"
-          value={nominal}
-          onChange={(e) => setNominal(e.target.value)}
-          disabled={disabled || isPending}
-        />
-        <p className="mt-1 text-xs text-muted-foreground">{formatRupiah(Number(nominal) || 0)}</p>
-      </TableCell>
+      <TableCell className="font-medium">{formatRupiah(item.saldo)}</TableCell>
       <TableCell>
         <Input
           value={keterangan}
@@ -64,24 +53,32 @@ function SaranaDanaRow({ item, disabled }: { item: SaranaDanaItem; disabled?: bo
           placeholder="Keterangan"
         />
       </TableCell>
-      <TableCell>
+      <TableCell className="space-x-2 whitespace-nowrap">
         {!disabled && (
           <Button size="sm" variant="outline" onClick={onSave} disabled={isPending}>
             {isPending ? "..." : "Simpan"}
           </Button>
         )}
+        <Button
+          size="sm"
+          variant="ghost"
+          render={<Link href={`/admin/sarana-dana/${item.key}`} />}
+          nativeButton={false}
+        >
+          Lihat Transaksi
+        </Button>
       </TableCell>
     </TableRow>
   );
 }
 
-export function SaranaDanaEditor({ items, disabled }: { items: SaranaDanaItem[]; disabled?: boolean }) {
+export function SaranaDanaEditor({ items, disabled }: { items: SaranaDanaBalance[]; disabled?: boolean }) {
   return (
     <Table>
       <TableHeader>
         <TableRow>
           <TableHead>Nama</TableHead>
-          <TableHead>Nominal</TableHead>
+          <TableHead>Saldo Saat Ini</TableHead>
           <TableHead>Keterangan</TableHead>
           <TableHead></TableHead>
         </TableRow>

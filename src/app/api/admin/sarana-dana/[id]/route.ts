@@ -22,12 +22,12 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   }
 
   const update: SaranaDanaUpdate = { updated_at: new Date().toISOString() };
-  if ("nominal" in body) {
-    const nominal = Number(body.nominal);
-    if (Number.isNaN(nominal)) {
-      return NextResponse.json({ error: "Nominal tidak valid" }, { status: 400 });
+  if ("saldo_awal" in body) {
+    const saldoAwal = Number(body.saldo_awal);
+    if (Number.isNaN(saldoAwal)) {
+      return NextResponse.json({ error: "Saldo awal tidak valid" }, { status: 400 });
     }
-    update.nominal = nominal;
+    update.saldo_awal = saldoAwal;
   }
   if ("keterangan" in body) update.keterangan = body.keterangan;
 

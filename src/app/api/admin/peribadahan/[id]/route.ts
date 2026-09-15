@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { PERIBADAHAN_ITEM_SELECT } from "@/lib/peribadahan";
 import { requirePermissionApi } from "@/lib/rbac/dal";
 import { createClient } from "@/lib/supabase/server";
 import type { Database } from "@/types/database";
@@ -6,9 +7,6 @@ import type { Database } from "@/types/database";
 type PeribadahanItemUpdate = Database["public"]["Tables"]["peribadahan_items"]["Update"];
 
 const FIELDS = ["category_id", "label", "hari", "jam", "tempat_id", "petugas_id"] as const;
-
-const SELECT_WITH_RELATIONS =
-  "*, category:peribadahan_categories(id, name, sort_order), tempat:tempat(id, nama), petugas:jemaat(id, nama)";
 
 /**
  * Updates or removes one Peribadahan item. Shared row - editable from
@@ -36,7 +34,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     .from("peribadahan_items")
     .update(update)
     .eq("id", id)
-    .select(SELECT_WITH_RELATIONS)
+    .select(PERIBADAHAN_ITEM_SELECT)
     .single();
 
   if (error) {
