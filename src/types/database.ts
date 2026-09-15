@@ -182,10 +182,6 @@ export interface Database {
           id: string;
           key: string;
           name: string;
-          hari: string | null;
-          jam: string | null;
-          tempat: string | null;
-          petugas: string | null;
           sort_order: number;
           updated_at: string;
         };
@@ -193,10 +189,6 @@ export interface Database {
           id?: string;
           key: string;
           name: string;
-          hari?: string | null;
-          jam?: string | null;
-          tempat?: string | null;
-          petugas?: string | null;
           sort_order?: number;
           updated_at?: string;
         };
@@ -204,14 +196,167 @@ export interface Database {
           id?: string;
           key?: string;
           name?: string;
-          hari?: string | null;
-          jam?: string | null;
-          tempat?: string | null;
-          petugas?: string | null;
           sort_order?: number;
           updated_at?: string;
         };
         Relationships: [];
+      };
+      peribadahan_items: {
+        Row: {
+          id: string;
+          category_id: string;
+          tanggal: string;
+          label: string | null;
+          hari: string | null;
+          jam: string | null;
+          tempat_id: string | null;
+          petugas_id: string | null;
+          sort_order: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          category_id: string;
+          tanggal: string;
+          label?: string | null;
+          hari?: string | null;
+          jam?: string | null;
+          tempat_id?: string | null;
+          petugas_id?: string | null;
+          sort_order?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          category_id?: string;
+          tanggal?: string;
+          label?: string | null;
+          hari?: string | null;
+          jam?: string | null;
+          tempat_id?: string | null;
+          petugas_id?: string | null;
+          sort_order?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "peribadahan_items_category_id_fkey";
+            columns: ["category_id"];
+            isOneToOne: false;
+            referencedRelation: "peribadahan_categories";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "peribadahan_items_tempat_id_fkey";
+            columns: ["tempat_id"];
+            isOneToOne: false;
+            referencedRelation: "tempat";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "peribadahan_items_petugas_id_fkey";
+            columns: ["petugas_id"];
+            isOneToOne: false;
+            referencedRelation: "jemaat";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      tempat: {
+        Row: {
+          id: string;
+          nama: string;
+          keterangan: string | null;
+          sort_order: number;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          nama: string;
+          keterangan?: string | null;
+          sort_order?: number;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          nama?: string;
+          keterangan?: string | null;
+          sort_order?: number;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      jemaat: {
+        Row: {
+          id: string;
+          nama: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          nama: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          nama?: string;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      label_jemaat: {
+        Row: {
+          id: string;
+          nama: string;
+          sort_order: number;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          nama: string;
+          sort_order?: number;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          nama?: string;
+          sort_order?: number;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      jemaat_labels: {
+        Row: {
+          jemaat_id: string;
+          label_id: string;
+        };
+        Insert: {
+          jemaat_id: string;
+          label_id: string;
+        };
+        Update: {
+          jemaat_id?: string;
+          label_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "jemaat_labels_jemaat_id_fkey";
+            columns: ["jemaat_id"];
+            isOneToOne: false;
+            referencedRelation: "jemaat";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "jemaat_labels_label_id_fkey";
+            columns: ["label_id"];
+            isOneToOne: false;
+            referencedRelation: "label_jemaat";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       sarana_dana_items: {
         Row: {

@@ -24,12 +24,56 @@ export interface JadwalFields {
   petugas: string | null;
 }
 
-export interface PeribadahanCategory extends JadwalFields {
+export interface PeribadahanCategory {
   id: string;
   key: string;
   name: string;
   sort_order: number;
   updated_at: string;
+}
+
+export interface Tempat {
+  id: string;
+  nama: string;
+  keterangan: string | null;
+  sort_order: number;
+}
+
+export interface LabelJemaat {
+  id: string;
+  nama: string;
+  sort_order: number;
+}
+
+export interface Jemaat {
+  id: string;
+  nama: string;
+}
+
+/** Jemaat with its assigned labels embedded - a person can hold more than one. */
+export interface JemaatWithLabels extends Jemaat {
+  labels: LabelJemaat[];
+}
+
+export interface PeribadahanItem {
+  id: string;
+  category_id: string;
+  tanggal: string;
+  label: string | null;
+  hari: string | null;
+  jam: string | null;
+  tempat_id: string | null;
+  petugas_id: string | null;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
+/** Item with its category/tempat/petugas embedded, for display and editing. */
+export interface PeribadahanItemWithRelations extends PeribadahanItem {
+  category: Pick<PeribadahanCategory, "id" | "name" | "sort_order"> | null;
+  tempat: Pick<Tempat, "id" | "nama"> | null;
+  petugas: Pick<Jemaat, "id" | "nama"> | null;
 }
 
 export interface LitbangCategory extends JadwalFields {

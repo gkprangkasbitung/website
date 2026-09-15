@@ -1,7 +1,9 @@
 import { notFound } from "next/navigation";
 import { Separator } from "@/components/ui/separator";
 import { JadwalEditor } from "@/components/admin/jadwal-editor";
+import { PeribadahanEditor } from "@/components/admin/peribadahan-editor";
 import { SaranaDanaEditor } from "@/components/admin/sarana-dana-editor";
+import { JEMAAT_SELECT_WITH_LABELS, flattenJemaatLabels } from "@/lib/jemaat";
 import { getAuthenticatedUser, hasPermission, requirePermission } from "@/lib/rbac/dal";
 import { createClient } from "@/lib/supabase/server";
 import { DeleteWartaButton } from "./delete-warta-button";
@@ -18,18 +20,37 @@ export default async function EditWartaPage({ params }: { params: Promise<{ id: 
   const canDelete = hasPermission(currentUser, "warta", "delete");
 
   const supabase = await createClient();
-  const [{ data: warta }, { data: peribadahan }, { data: saranaDana }, { data: litbangItems }, { data: kesaksianItems }] =
-    await Promise.all([
-      supabase.from("warta").select("*").eq("id", id).single(),
-      supabase.from("peribadahan_categories").select("*").order("sort_order"),
-      supabase.from("sarana_dana_items").select("*").order("key"),
-      supabase.from("warta_litbang_items").select("*").eq("warta_id", id).order("sort_order"),
-      supabase.from("warta_kesaksian_items").select("*").eq("warta_id", id).order("sort_order"),
-    ]);
+  const { data: warta } = await supabase.from("warta").select("*").eq("id", id).single();
 
   if (!warta) {
     notFound();
   }
+
+  const [
+    { data: peribadahanCategories },
+    { data: peribadahanItems },
+    { data: tempatList },
+    { data: jemaatList },
+    { data: saranaDana },
+    { data: litbangItems },
+    { data: kesaksianItems },
+  ] = await Promise.all([
+    supabase.from("peribadahan_categories").select("*").order("sort_order"),
+    supabase
+      .from("peribadahan_items")
+      .select(
+        "*, category:peribadahan_categories(id, name, sort_order), tempat:tempat(id, nama), petugas:jemaat(id, nama)",
+      )
+      .eq("tanggal", warta.tanggal_kebaktian)
+      .order("sort_order"),
+    supabase.from("tempat").select("*").order("sort_order"),
+    supabase.from("jemaat").select(JEMAAT_SELECT_WITH_LABELS).order("nama"),
+    supabase.from("sarana_dana_items").select("*").order("key"),
+    supabase.from("warta_litbang_items").select("*").eq("warta_id", id).order("sort_order"),
+    supabase.from("warta_kesaksian_items").select("*").eq("warta_id", id).order("sort_order"),
+  ]);
+
+  const jemaatWithLabels = flattenJemaatLabels(jemaatList ?? []);
 
   return (
     <div className="max-w-4xl space-y-8">
@@ -52,12 +73,16 @@ export default async function EditWartaPage({ params }: { params: Promise<{ id: 
         <div>
           <h2 className="text-lg font-medium">Bidang Peribadahan</h2>
           <p className="text-sm text-muted-foreground">
-            Data hidup - mengubah di sini juga mengubah halaman Peribadahan dan warta lain.
+            Baris untuk tanggal {warta.tanggal_kebaktian} - data ini sama dengan yang ada di
+            halaman Peribadahan untuk tanggal yang sama, dan sebaliknya.
           </p>
         </div>
-        <JadwalEditor
-          rows={peribadahan ?? []}
-          patchUrlBase="/api/admin/peribadahan"
+        <PeribadahanEditor
+          tanggal={warta.tanggal_kebaktian}
+          items={peribadahanItems ?? []}
+          categories={peribadahanCategories ?? []}
+          tempatList={tempatList ?? []}
+          jemaatList={jemaatWithLabels}
           disabled={!canUpdate}
         />
       </section>

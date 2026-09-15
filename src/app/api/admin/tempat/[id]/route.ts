@@ -3,17 +3,8 @@ import { requirePermissionApi } from "@/lib/rbac/dal";
 import { createClient } from "@/lib/supabase/server";
 import type { Database } from "@/types/database";
 
-type PeribadahanItemUpdate = Database["public"]["Tables"]["peribadahan_items"]["Update"];
+type TempatUpdate = Database["public"]["Tables"]["tempat"]["Update"];
 
-const FIELDS = ["category_id", "label", "hari", "jam", "tempat_id", "petugas_id"] as const;
-
-const SELECT_WITH_RELATIONS =
-  "*, category:peribadahan_categories(id, name, sort_order), tempat:tempat(id, nama), petugas:jemaat(id, nama)";
-
-/**
- * Updates or removes one Peribadahan item. Shared row - editable from
- * /admin/peribadahan or inline from a warta, both hitting the same table.
- */
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const auth = await requirePermissionApi("warta", "update");
   if (!auth.ok) {
@@ -26,17 +17,16 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     return NextResponse.json({ error: "Body tidak valid" }, { status: 400 });
   }
 
-  const update: PeribadahanItemUpdate = { updated_at: new Date().toISOString() };
-  for (const field of FIELDS) {
-    if (field in body) update[field] = body[field];
-  }
+  const update: TempatUpdate = {};
+  if ("nama" in body) update.nama = body.nama;
+  if ("keterangan" in body) update.keterangan = body.keterangan;
 
   const supabase = await createClient();
   const { data, error } = await supabase
-    .from("peribadahan_items")
+    .from("tempat")
     .update(update)
     .eq("id", id)
-    .select(SELECT_WITH_RELATIONS)
+    .select()
     .single();
 
   if (error) {
@@ -54,7 +44,7 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
 
   const { id } = await params;
   const supabase = await createClient();
-  const { error } = await supabase.from("peribadahan_items").delete().eq("id", id);
+  const { error } = await supabase.from("tempat").delete().eq("id", id);
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 400 });

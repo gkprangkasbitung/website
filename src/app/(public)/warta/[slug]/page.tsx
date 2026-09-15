@@ -4,7 +4,14 @@ import { createClient } from "@/lib/supabase/server";
 function JadwalTable({
   rows,
 }: {
-  rows: { name: string; hari: string | null; jam: string | null; tempat: string | null; petugas: string | null }[];
+  rows: {
+    id: string;
+    name: string;
+    hari: string | null;
+    jam: string | null;
+    tempat: string | null;
+    petugas: string | null;
+  }[];
 }) {
   return (
     <div className="overflow-x-auto">
@@ -20,7 +27,7 @@ function JadwalTable({
         </thead>
         <tbody>
           {rows.map((row) => (
-            <tr key={row.name} className="border-b last:border-0">
+            <tr key={row.id} className="border-b last:border-0">
               <td className="py-2 pr-4 font-medium">{row.name}</td>
               <td className="py-2 pr-4">{row.hari ?? "-"}</td>
               <td className="py-2 pr-4">{row.jam ?? "-"}</td>
@@ -57,13 +64,28 @@ export default async function PublicWartaDetailPage({
     notFound();
   }
 
-  const [{ data: peribadahan }, { data: saranaDana }, { data: litbangItems }, { data: kesaksianItems }] =
+  const [{ data: peribadahanItems }, { data: saranaDana }, { data: litbangItems }, { data: kesaksianItems }] =
     await Promise.all([
-      supabase.from("peribadahan_categories").select("*").order("sort_order"),
+      supabase
+        .from("peribadahan_items")
+        .select(
+          "*, category:peribadahan_categories(id, name, sort_order), tempat:tempat(id, nama), petugas:jemaat(id, nama)",
+        )
+        .eq("tanggal", warta.tanggal_kebaktian)
+        .order("sort_order"),
       supabase.from("sarana_dana_items").select("*").order("key"),
       supabase.from("warta_litbang_items").select("*").eq("warta_id", warta.id).order("sort_order"),
       supabase.from("warta_kesaksian_items").select("*").eq("warta_id", warta.id).order("sort_order"),
     ]);
+
+  const peribadahanRows = (peribadahanItems ?? []).map((item) => ({
+    id: item.id,
+    name: item.label ? `${item.category?.name ?? ""} — ${item.label}` : item.category?.name ?? "-",
+    hari: item.hari,
+    jam: item.jam,
+    tempat: item.tempat?.nama ?? null,
+    petugas: item.petugas?.nama ?? null,
+  }));
 
   return (
     <div className="mx-auto max-w-3xl space-y-10 px-4 py-16">
@@ -87,7 +109,7 @@ export default async function PublicWartaDetailPage({
 
       <section className="space-y-2">
         <h2 className="text-xl font-semibold">Bidang Peribadahan</h2>
-        <JadwalTable rows={peribadahan ?? []} />
+        <JadwalTable rows={peribadahanRows} />
       </section>
 
       {(litbangItems ?? []).length > 0 && (
