@@ -5,7 +5,16 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Table,
   TableBody,
@@ -17,8 +26,9 @@ import {
 import { formatRupiah } from "@/lib/format";
 import type { SaranaDanaBalance } from "@/types/warta";
 
-function SaranaDanaRow({ item, disabled }: { item: SaranaDanaBalance; disabled?: boolean }) {
+function EditKeteranganDialog({ item, disabled }: { item: SaranaDanaBalance; disabled?: boolean }) {
   const router = useRouter();
+  const [open, setOpen] = useState(false);
   const [keterangan, setKeterangan] = useState(item.keterangan ?? "");
   const [isPending, startTransition] = useTransition();
 
@@ -37,28 +47,52 @@ function SaranaDanaRow({ item, disabled }: { item: SaranaDanaBalance; disabled?:
       }
 
       toast.success(`${item.name} tersimpan`);
+      setOpen(false);
       router.refresh();
     });
   }
 
   return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger render={<Button size="sm" variant="outline" />}>
+        {disabled ? "Lihat" : "Detail"}
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{item.name}</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="keterangan">Keterangan</Label>
+            <Input
+              id="keterangan"
+              value={keterangan}
+              onChange={(e) => setKeterangan(e.target.value)}
+              disabled={disabled || isPending}
+              placeholder="Keterangan"
+            />
+          </div>
+          {!disabled && (
+            <DialogFooter>
+              <Button onClick={onSave} disabled={isPending}>
+                {isPending ? "Menyimpan..." : "Simpan"}
+              </Button>
+            </DialogFooter>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function SaranaDanaRow({ item, disabled }: { item: SaranaDanaBalance; disabled?: boolean }) {
+  return (
     <TableRow>
       <TableCell className="font-medium">{item.name}</TableCell>
       <TableCell className="font-medium">{formatRupiah(item.saldo)}</TableCell>
-      <TableCell>
-        <Input
-          value={keterangan}
-          onChange={(e) => setKeterangan(e.target.value)}
-          disabled={disabled || isPending}
-          placeholder="Keterangan"
-        />
-      </TableCell>
+      <TableCell className="max-w-64 truncate">{item.keterangan ?? "-"}</TableCell>
       <TableCell className="space-x-2 whitespace-nowrap">
-        {!disabled && (
-          <Button size="sm" variant="outline" onClick={onSave} disabled={isPending}>
-            {isPending ? "..." : "Simpan"}
-          </Button>
-        )}
+        <EditKeteranganDialog item={item} disabled={disabled} />
         <Button
           size="sm"
           variant="ghost"

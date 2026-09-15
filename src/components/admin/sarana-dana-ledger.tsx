@@ -5,7 +5,16 @@ import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -77,15 +86,16 @@ function TransactionRow({
   );
 }
 
-function AddTransactionRow({ itemId }: { itemId: string }) {
+function AddTransactionDialog({ itemId }: { itemId: string }) {
   const router = useRouter();
+  const [open, setOpen] = useState(false);
   const [tanggal, setTanggal] = useState(() => new Date().toISOString().slice(0, 10));
   const [tipe, setTipe] = useState<SaranaDanaTransactionType>("masuk");
   const [jumlah, setJumlah] = useState("");
   const [keterangan, setKeterangan] = useState("");
   const [isPending, startTransition] = useTransition();
 
-  function onAdd() {
+  function onSubmit() {
     if (!jumlah || Number(jumlah) < 0) {
       toast.error("Jumlah wajib diisi");
       return;
@@ -104,52 +114,78 @@ function AddTransactionRow({ itemId }: { itemId: string }) {
         return;
       }
 
+      toast.success("Transaksi ditambahkan");
+      setOpen(false);
       setJumlah("");
       setKeterangan("");
-      toast.success("Transaksi ditambahkan");
       router.refresh();
     });
   }
 
   return (
-    <TableRow>
-      <TableCell>
-        <Input type="date" value={tanggal} onChange={(e) => setTanggal(e.target.value)} disabled={isPending} />
-      </TableCell>
-      <TableCell>
-        <Select value={tipe} onValueChange={(v) => setTipe(v as SaranaDanaTransactionType)} disabled={isPending}>
-          <SelectTrigger className="w-32">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="masuk">Pemasukan</SelectItem>
-            <SelectItem value="keluar">Pengeluaran</SelectItem>
-          </SelectContent>
-        </Select>
-      </TableCell>
-      <TableCell>
-        <Input
-          type="number"
-          value={jumlah}
-          onChange={(e) => setJumlah(e.target.value)}
-          disabled={isPending}
-          placeholder="0"
-        />
-      </TableCell>
-      <TableCell>
-        <Input
-          value={keterangan}
-          onChange={(e) => setKeterangan(e.target.value)}
-          disabled={isPending}
-          placeholder="Keterangan"
-        />
-      </TableCell>
-      <TableCell>
-        <Button size="sm" onClick={onAdd} disabled={isPending}>
-          {isPending ? "..." : "Tambah"}
-        </Button>
-      </TableCell>
-    </TableRow>
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger render={<Button size="sm" />}>Tambah Transaksi</DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Tambah Transaksi</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="tanggal">Tanggal</Label>
+            <Input
+              id="tanggal"
+              type="date"
+              value={tanggal}
+              onChange={(e) => setTanggal(e.target.value)}
+              disabled={isPending}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>Tipe</Label>
+            <Select
+              value={tipe}
+              onValueChange={(v) => v && setTipe(v as SaranaDanaTransactionType)}
+              items={{ masuk: "Pemasukan", keluar: "Pengeluaran" }}
+              disabled={isPending}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="masuk">Pemasukan</SelectItem>
+                <SelectItem value="keluar">Pengeluaran</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="jumlah">Jumlah</Label>
+            <Input
+              id="jumlah"
+              type="number"
+              value={jumlah}
+              onChange={(e) => setJumlah(e.target.value)}
+              disabled={isPending}
+              placeholder="0"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="keterangan">Keterangan</Label>
+            <Input
+              id="keterangan"
+              value={keterangan}
+              onChange={(e) => setKeterangan(e.target.value)}
+              disabled={isPending}
+              placeholder="Keterangan"
+            />
+          </div>
+          <DialogFooter>
+            <Button type="button" onClick={onSubmit} disabled={isPending}>
+              {isPending ? "Menyimpan..." : "Tambah"}
+            </Button>
+          </DialogFooter>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -163,22 +199,35 @@ export function SaranaDanaLedger({
   disabled?: boolean;
 }) {
   return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>Tanggal</TableHead>
-          <TableHead>Tipe</TableHead>
-          <TableHead>Jumlah</TableHead>
-          <TableHead>Keterangan</TableHead>
-          <TableHead></TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {transactions.map((t) => (
-          <TransactionRow key={t.id} itemId={itemId} transaction={t} disabled={disabled} />
-        ))}
-        {!disabled && <AddTransactionRow itemId={itemId} />}
-      </TableBody>
-    </Table>
+    <div className="space-y-4">
+      {!disabled && (
+        <div className="flex justify-end">
+          <AddTransactionDialog itemId={itemId} />
+        </div>
+      )}
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Tanggal</TableHead>
+            <TableHead>Tipe</TableHead>
+            <TableHead>Jumlah</TableHead>
+            <TableHead>Keterangan</TableHead>
+            <TableHead></TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {transactions.map((t) => (
+            <TransactionRow key={t.id} itemId={itemId} transaction={t} disabled={disabled} />
+          ))}
+          {transactions.length === 0 && (
+            <TableRow>
+              <TableCell colSpan={5} className="text-sm text-muted-foreground">
+                Belum ada transaksi.
+              </TableCell>
+            </TableRow>
+          )}
+        </TableBody>
+      </Table>
+    </div>
   );
 }

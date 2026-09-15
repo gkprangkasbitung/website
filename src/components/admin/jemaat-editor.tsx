@@ -4,7 +4,16 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -39,7 +48,7 @@ function LabelMultiSelect({
 
   return (
     <Select multiple value={value} onValueChange={onChange} disabled={disabled}>
-      <SelectTrigger className="w-56">
+      <SelectTrigger className="w-full">
         <SelectValue placeholder="Pilih label">
           {(selected: string[]) =>
             selected.length > 0
@@ -62,7 +71,7 @@ function LabelMultiSelect({
   );
 }
 
-function JemaatRow({
+function EditJemaatDialog({
   jemaat,
   allLabels,
   disabled,
@@ -72,6 +81,7 @@ function JemaatRow({
   disabled?: boolean;
 }) {
   const router = useRouter();
+  const [open, setOpen] = useState(false);
   const [nama, setNama] = useState(jemaat.nama);
   const [labelIds, setLabelIds] = useState(jemaat.labels.map((l) => l.id));
   const [isPending, startTransition] = useTransition();
@@ -91,6 +101,7 @@ function JemaatRow({
       }
 
       toast.success("Tersimpan");
+      setOpen(false);
       router.refresh();
     });
   }
@@ -106,41 +117,83 @@ function JemaatRow({
       }
 
       toast.success("Jemaat dihapus");
+      setOpen(false);
       router.refresh();
     });
   }
 
   return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger render={<Button size="sm" variant="outline" />}>
+        {disabled ? "Lihat" : "Detail"}
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{jemaat.nama}</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="nama">Nama</Label>
+            <Input
+              id="nama"
+              value={nama}
+              onChange={(e) => setNama(e.target.value)}
+              disabled={disabled || isPending}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>Label/Jabatan</Label>
+            <LabelMultiSelect
+              allLabels={allLabels}
+              value={labelIds}
+              onChange={setLabelIds}
+              disabled={disabled || isPending}
+            />
+          </div>
+          {!disabled && (
+            <DialogFooter>
+              <Button size="sm" variant="ghost" onClick={onDelete} disabled={isPending}>
+                Hapus
+              </Button>
+              <Button onClick={onSave} disabled={isPending}>
+                {isPending ? "Menyimpan..." : "Simpan"}
+              </Button>
+            </DialogFooter>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function JemaatRow({
+  jemaat,
+  allLabels,
+  disabled,
+}: {
+  jemaat: JemaatWithLabels;
+  allLabels: LabelJemaat[];
+  disabled?: boolean;
+}) {
+  return (
     <TableRow>
-      <TableCell className="align-top">
-        <Input value={nama} onChange={(e) => setNama(e.target.value)} disabled={disabled || isPending} />
-      </TableCell>
-      <TableCell className="align-top">
-        <LabelMultiSelect allLabels={allLabels} value={labelIds} onChange={setLabelIds} disabled={disabled || isPending} />
-      </TableCell>
-      <TableCell className="space-x-2 whitespace-nowrap align-top">
-        {!disabled && (
-          <>
-            <Button size="sm" variant="outline" onClick={onSave} disabled={isPending}>
-              Simpan
-            </Button>
-            <Button size="sm" variant="ghost" onClick={onDelete} disabled={isPending}>
-              Hapus
-            </Button>
-          </>
-        )}
+      <TableCell>{jemaat.nama}</TableCell>
+      <TableCell>{jemaat.labels.length > 0 ? jemaat.labels.map((l) => l.nama).join(", ") : "-"}</TableCell>
+      <TableCell>
+        <EditJemaatDialog jemaat={jemaat} allLabels={allLabels} disabled={disabled} />
       </TableCell>
     </TableRow>
   );
 }
 
-function AddJemaatRow({ allLabels }: { allLabels: LabelJemaat[] }) {
+function AddJemaatDialog({ allLabels }: { allLabels: LabelJemaat[] }) {
   const router = useRouter();
+  const [open, setOpen] = useState(false);
   const [nama, setNama] = useState("");
   const [labelIds, setLabelIds] = useState<string[]>([]);
   const [isPending, startTransition] = useTransition();
 
-  function onAdd() {
+  function onSubmit() {
     if (!nama.trim()) {
       toast.error("Nama jemaat wajib diisi");
       return;
@@ -159,27 +212,38 @@ function AddJemaatRow({ allLabels }: { allLabels: LabelJemaat[] }) {
         return;
       }
 
+      toast.success("Jemaat ditambahkan");
+      setOpen(false);
       setNama("");
       setLabelIds([]);
-      toast.success("Jemaat ditambahkan");
       router.refresh();
     });
   }
 
   return (
-    <TableRow>
-      <TableCell className="align-top">
-        <Input value={nama} onChange={(e) => setNama(e.target.value)} disabled={isPending} placeholder="Nama jemaat baru" />
-      </TableCell>
-      <TableCell className="align-top">
-        <LabelMultiSelect allLabels={allLabels} value={labelIds} onChange={setLabelIds} disabled={isPending} />
-      </TableCell>
-      <TableCell className="align-top">
-        <Button size="sm" onClick={onAdd} disabled={isPending}>
-          {isPending ? "..." : "Tambah"}
-        </Button>
-      </TableCell>
-    </TableRow>
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger render={<Button size="sm" />}>Tambah Jemaat</DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Tambah Jemaat</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="nama">Nama</Label>
+            <Input id="nama" value={nama} onChange={(e) => setNama(e.target.value)} disabled={isPending} />
+          </div>
+          <div className="space-y-2">
+            <Label>Label/Jabatan</Label>
+            <LabelMultiSelect allLabels={allLabels} value={labelIds} onChange={setLabelIds} disabled={isPending} />
+          </div>
+          <DialogFooter>
+            <Button type="button" onClick={onSubmit} disabled={isPending}>
+              {isPending ? "Menyimpan..." : "Tambah"}
+            </Button>
+          </DialogFooter>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -193,20 +257,33 @@ export function JemaatEditor({
   disabled?: boolean;
 }) {
   return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>Nama</TableHead>
-          <TableHead>Label/Jabatan</TableHead>
-          <TableHead></TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {items.map((item) => (
-          <JemaatRow key={item.id} jemaat={item} allLabels={allLabels} disabled={disabled} />
-        ))}
-        {!disabled && <AddJemaatRow allLabels={allLabels} />}
-      </TableBody>
-    </Table>
+    <div className="space-y-4">
+      {!disabled && (
+        <div className="flex justify-end">
+          <AddJemaatDialog allLabels={allLabels} />
+        </div>
+      )}
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Nama</TableHead>
+            <TableHead>Label/Jabatan</TableHead>
+            <TableHead></TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {items.map((item) => (
+            <JemaatRow key={item.id} jemaat={item} allLabels={allLabels} disabled={disabled} />
+          ))}
+          {items.length === 0 && (
+            <TableRow>
+              <TableCell colSpan={3} className="text-sm text-muted-foreground">
+                Belum ada jemaat.
+              </TableCell>
+            </TableRow>
+          )}
+        </TableBody>
+      </Table>
+    </div>
   );
 }

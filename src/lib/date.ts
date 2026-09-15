@@ -6,3 +6,16 @@ export function nextSundayIso(from: Date = new Date()): string {
   date.setDate(date.getDate() + daysUntilSunday);
   return date.toISOString().slice(0, 10);
 }
+
+const TANGGAL_PANJANG_FORMATTER = new Intl.DateTimeFormat("id-ID", {
+  weekday: "long",
+  day: "numeric",
+  month: "long",
+  year: "numeric",
+  timeZone: "UTC",
+});
+
+/** Formats a YYYY-MM-DD date as e.g. "Minggu, 14 September 2025". */
+export function formatTanggalPanjang(tanggal: string): string {
+  return TANGGAL_PANJANG_FORMATTER.format(new Date(`${tanggal}T00:00:00Z`));
+}

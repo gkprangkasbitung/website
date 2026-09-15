@@ -1,20 +1,29 @@
 import { notFound } from "next/navigation";
+import { PaginationBar } from "@/components/admin/pagination-bar";
 import { SaranaDanaLedger } from "@/components/admin/sarana-dana-ledger";
 import { formatRupiah } from "@/lib/format";
+import { parsePageSize } from "@/lib/pagination";
 import { getAuthenticatedUser, hasPermission, requirePermission } from "@/lib/rbac/dal";
 import { createClient } from "@/lib/supabase/server";
 import { SaldoAwalForm } from "./saldo-awal-form";
 
 export default async function SaranaDanaLedgerPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ key: string }>;
+  searchParams: Promise<{ page?: string; pageSize?: string }>;
 }) {
   await requirePermission("warta", "read");
   const currentUser = await getAuthenticatedUser();
   const canEdit = hasPermission(currentUser, "warta", "update");
 
   const { key } = await params;
+  const { page: pageParam, pageSize: pageSizeParam } = await searchParams;
+  const pageSize = parsePageSize(pageSizeParam);
+  const page = Math.max(1, Number(pageParam) || 1);
+  const from = (page - 1) * pageSize;
+  const to = from + pageSize - 1;
 
   const supabase = await createClient();
   const { data: item } = await supabase
@@ -27,14 +36,15 @@ export default async function SaranaDanaLedgerPage({
     notFound();
   }
 
-  const [{ data: balance }, { data: transactions }] = await Promise.all([
+  const [{ data: balance }, { data: transactions, count }] = await Promise.all([
     supabase.from("sarana_dana_balances").select("*").eq("id", item.id).single(),
     supabase
       .from("sarana_dana_transactions")
-      .select("*")
+      .select("*", { count: "exact" })
       .eq("item_id", item.id)
       .order("tanggal", { ascending: false })
-      .order("created_at", { ascending: false }),
+      .order("created_at", { ascending: false })
+      .range(from, to),
   ]);
 
   return (
@@ -55,6 +65,8 @@ export default async function SaranaDanaLedgerPage({
       {canEdit && <SaldoAwalForm itemId={item.id} saldoAwal={item.saldo_awal} />}
 
       <SaranaDanaLedger itemId={item.id} transactions={transactions ?? []} disabled={!canEdit} />
+
+      <PaginationBar page={page} pageSize={pageSize} totalItems={count ?? 0} entryLabel="transaksi" />
     </div>
   );
 }

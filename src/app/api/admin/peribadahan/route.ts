@@ -63,11 +63,19 @@ export async function POST(request: Request) {
     .insert({
       category_id: categoryId,
       tanggal,
-      label: body?.label ?? null,
-      hari: body?.hari ?? null,
       jam: body?.jam ?? null,
       tempat_id: body?.tempat_id ?? null,
-      petugas_id: body?.petugas_id ?? null,
+      pelayan_firman_id: body?.pelayan_firman_id ?? null,
+      liturgos_id: body?.liturgos_id ?? null,
+      wilayah_id: body?.wilayah_id ?? null,
+      tema: body?.tema ?? null,
+      dpa: body?.dpa ?? null,
+      catatan: body?.catatan ?? null,
+      kehadiran_laki_laki: body?.kehadiran_laki_laki ?? null,
+      kehadiran_perempuan: body?.kehadiran_perempuan ?? null,
+      kehadiran_anak: body?.kehadiran_anak ?? null,
+      pemusik_id: body?.pemusik_id ?? null,
+      bahan_alkitab: body?.bahan_alkitab ?? null,
       sort_order: count ?? 0,
     })
     .select(PERIBADAHAN_ITEM_SELECT)

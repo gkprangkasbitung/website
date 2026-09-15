@@ -13,6 +13,7 @@ export interface Database {
           email: string | null;
           full_name: string | null;
           avatar_url: string | null;
+          jemaat_id: string | null;
           created_at: string;
         };
         Insert: {
@@ -20,6 +21,7 @@ export interface Database {
           email?: string | null;
           full_name?: string | null;
           avatar_url?: string | null;
+          jemaat_id?: string | null;
           created_at?: string;
         };
         Update: {
@@ -27,9 +29,18 @@ export interface Database {
           email?: string | null;
           full_name?: string | null;
           avatar_url?: string | null;
+          jemaat_id?: string | null;
           created_at?: string;
         };
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: "profiles_jemaat_id_fkey";
+            columns: ["jemaat_id"];
+            isOneToOne: true;
+            referencedRelation: "jemaat";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       roles: {
         Row: {
@@ -206,11 +217,19 @@ export interface Database {
           id: string;
           category_id: string;
           tanggal: string;
-          label: string | null;
-          hari: string | null;
           jam: string | null;
           tempat_id: string | null;
-          petugas_id: string | null;
+          pelayan_firman_id: string | null;
+          liturgos_id: string | null;
+          wilayah_id: string | null;
+          tema: string | null;
+          dpa: string | null;
+          catatan: string | null;
+          kehadiran_laki_laki: number | null;
+          kehadiran_perempuan: number | null;
+          kehadiran_anak: number | null;
+          pemusik_id: string | null;
+          bahan_alkitab: string | null;
           sort_order: number;
           created_at: string;
           updated_at: string;
@@ -219,11 +238,19 @@ export interface Database {
           id?: string;
           category_id: string;
           tanggal: string;
-          label?: string | null;
-          hari?: string | null;
           jam?: string | null;
           tempat_id?: string | null;
-          petugas_id?: string | null;
+          pelayan_firman_id?: string | null;
+          liturgos_id?: string | null;
+          wilayah_id?: string | null;
+          tema?: string | null;
+          dpa?: string | null;
+          catatan?: string | null;
+          kehadiran_laki_laki?: number | null;
+          kehadiran_perempuan?: number | null;
+          kehadiran_anak?: number | null;
+          pemusik_id?: string | null;
+          bahan_alkitab?: string | null;
           sort_order?: number;
           created_at?: string;
           updated_at?: string;
@@ -232,11 +259,19 @@ export interface Database {
           id?: string;
           category_id?: string;
           tanggal?: string;
-          label?: string | null;
-          hari?: string | null;
           jam?: string | null;
           tempat_id?: string | null;
-          petugas_id?: string | null;
+          pelayan_firman_id?: string | null;
+          liturgos_id?: string | null;
+          wilayah_id?: string | null;
+          tema?: string | null;
+          dpa?: string | null;
+          catatan?: string | null;
+          kehadiran_laki_laki?: number | null;
+          kehadiran_perempuan?: number | null;
+          kehadiran_anak?: number | null;
+          pemusik_id?: string | null;
+          bahan_alkitab?: string | null;
           sort_order?: number;
           created_at?: string;
           updated_at?: string;
@@ -257,8 +292,92 @@ export interface Database {
             referencedColumns: ["id"];
           },
           {
-            foreignKeyName: "peribadahan_items_petugas_id_fkey";
-            columns: ["petugas_id"];
+            foreignKeyName: "peribadahan_items_pelayan_firman_id_fkey";
+            columns: ["pelayan_firman_id"];
+            isOneToOne: false;
+            referencedRelation: "jemaat";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "peribadahan_items_liturgos_id_fkey";
+            columns: ["liturgos_id"];
+            isOneToOne: false;
+            referencedRelation: "jemaat";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "peribadahan_items_pemusik_id_fkey";
+            columns: ["pemusik_id"];
+            isOneToOne: false;
+            referencedRelation: "jemaat";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "peribadahan_items_wilayah_id_fkey";
+            columns: ["wilayah_id"];
+            isOneToOne: false;
+            referencedRelation: "wilayah";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      wilayah: {
+        Row: {
+          id: string;
+          nama: string;
+          sort_order: number;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          nama: string;
+          sort_order?: number;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          nama?: string;
+          sort_order?: number;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      peribadahan_smka_kelompok: {
+        Row: {
+          id: string;
+          item_id: string;
+          kelompok: string;
+          pf_id: string | null;
+          laki_laki: number | null;
+          perempuan: number | null;
+        };
+        Insert: {
+          id?: string;
+          item_id: string;
+          kelompok: string;
+          pf_id?: string | null;
+          laki_laki?: number | null;
+          perempuan?: number | null;
+        };
+        Update: {
+          id?: string;
+          item_id?: string;
+          kelompok?: string;
+          pf_id?: string | null;
+          laki_laki?: number | null;
+          perempuan?: number | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "peribadahan_smka_kelompok_item_id_fkey";
+            columns: ["item_id"];
+            isOneToOne: false;
+            referencedRelation: "peribadahan_items";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "peribadahan_smka_kelompok_pf_id_fkey";
+            columns: ["pf_id"];
             isOneToOne: false;
             referencedRelation: "jemaat";
             referencedColumns: ["id"];

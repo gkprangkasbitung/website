@@ -2,43 +2,79 @@ import { notFound } from "next/navigation";
 import { formatRupiah } from "@/lib/format";
 import { PERIBADAHAN_ITEM_SELECT } from "@/lib/peribadahan";
 import { createClient } from "@/lib/supabase/server";
+import { SMKA_KELOMPOK_OPTIONS, type PeribadahanItemWithRelations } from "@/types/warta";
 
-function JadwalTable({
-  rows,
-}: {
-  rows: {
-    id: string;
-    name: string;
-    hari: string | null;
-    jam: string | null;
-    tempat: string | null;
-    petugas: string | null;
-  }[];
-}) {
+/** Only shows whichever fields are actually filled in for this item -
+ * which fields that is depends on its category (see peribadahan-editor.tsx
+ * for the admin-side field configuration these mirror). */
+function PeribadahanItemCard({ item }: { item: PeribadahanItemWithRelations }) {
+  const isSmka = item.category?.key === "smka";
+
+  const fields: { label: string; value: string }[] = [
+    ...(item.jam ? [{ label: "Waktu", value: item.jam }] : []),
+    ...(item.tempat ? [{ label: "Tempat", value: item.tempat.nama }] : []),
+    ...(item.wilayah ? [{ label: "Wilayah", value: item.wilayah.nama }] : []),
+    ...(item.dpa ? [{ label: "DPA", value: item.dpa }] : []),
+    ...(item.tema ? [{ label: "Tema", value: item.tema }] : []),
+    ...(item.pelayan_firman ? [{ label: "Pelayan Firman", value: item.pelayan_firman.nama }] : []),
+    ...(item.liturgos
+      ? [{ label: isSmka ? "Pelayan Liturgi" : "Liturgos", value: item.liturgos.nama }]
+      : []),
+    ...(isSmka && item.pemusik ? [{ label: "Pemusik", value: item.pemusik.nama }] : []),
+    ...(isSmka && item.bahan_alkitab ? [{ label: "Bahan Alkitab", value: item.bahan_alkitab }] : []),
+    ...(item.kehadiran_laki_laki != null
+      ? [{ label: "Kehadiran Laki-laki", value: String(item.kehadiran_laki_laki) }]
+      : []),
+    ...(item.kehadiran_perempuan != null
+      ? [{ label: "Kehadiran Perempuan", value: String(item.kehadiran_perempuan) }]
+      : []),
+    ...(item.kehadiran_anak != null
+      ? [{ label: "Kehadiran Anak-anak", value: String(item.kehadiran_anak) }]
+      : []),
+  ];
+
+  const kelompokRows = (item.smka_kelompok ?? []).filter(
+    (k) => k.pf || k.laki_laki != null || k.perempuan != null,
+  );
+
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="border-b text-left text-muted-foreground">
-            <th className="py-2 pr-4">Bidang</th>
-            <th className="py-2 pr-4">Hari</th>
-            <th className="py-2 pr-4">Jam</th>
-            <th className="py-2 pr-4">Tempat</th>
-            <th className="py-2">Petugas</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row) => (
-            <tr key={row.id} className="border-b last:border-0">
-              <td className="py-2 pr-4 font-medium">{row.name}</td>
-              <td className="py-2 pr-4">{row.hari ?? "-"}</td>
-              <td className="py-2 pr-4">{row.jam ?? "-"}</td>
-              <td className="py-2 pr-4">{row.tempat ?? "-"}</td>
-              <td className="py-2">{row.petugas ?? "-"}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+    <div className="space-y-2 border-b pb-4 last:border-0">
+      <p className="font-medium">{item.category?.name ?? "-"}</p>
+      <dl className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm sm:grid-cols-3">
+        {fields.map((f) => (
+          <div key={f.label}>
+            <dt className="text-xs text-muted-foreground">{f.label}</dt>
+            <dd>{f.value}</dd>
+          </div>
+        ))}
+      </dl>
+      {item.catatan && <p className="text-sm text-muted-foreground">{item.catatan}</p>}
+      {kelompokRows.length > 0 && (
+        <div className="overflow-x-auto pt-1">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b text-left text-muted-foreground">
+                <th className="py-1 pr-3">Kelompok</th>
+                <th className="py-1 pr-3">PF</th>
+                <th className="py-1 pr-3">L</th>
+                <th className="py-1">P</th>
+              </tr>
+            </thead>
+            <tbody>
+              {kelompokRows.map((k) => (
+                <tr key={k.id} className="border-b last:border-0">
+                  <td className="py-1 pr-3">
+                    {SMKA_KELOMPOK_OPTIONS.find((o) => o.value === k.kelompok)?.label ?? k.kelompok}
+                  </td>
+                  <td className="py-1 pr-3">{k.pf?.nama ?? "-"}</td>
+                  <td className="py-1 pr-3">{k.laki_laki ?? "-"}</td>
+                  <td className="py-1">{k.perempuan ?? "-"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }
@@ -91,15 +127,6 @@ export default async function PublicWartaDetailPage({
       supabase.from("warta_kesaksian_items").select("*").eq("warta_id", warta.id).order("sort_order"),
     ]);
 
-  const peribadahanRows = (peribadahanItems ?? []).map((item) => ({
-    id: item.id,
-    name: item.label ? `${item.category?.name ?? ""} — ${item.label}` : item.category?.name ?? "-",
-    hari: item.hari,
-    jam: item.jam,
-    tempat: item.tempat?.nama ?? null,
-    petugas: item.petugas?.nama ?? null,
-  }));
-
   return (
     <div className="mx-auto max-w-3xl space-y-10 px-4 py-16">
       <header className="space-y-1">
@@ -122,7 +149,11 @@ export default async function PublicWartaDetailPage({
 
       <section className="space-y-2">
         <h2 className="text-xl font-semibold">Bidang Peribadahan</h2>
-        <JadwalTable rows={peribadahanRows} />
+        <div>
+          {(peribadahanItems ?? []).map((item) => (
+            <PeribadahanItemCard key={item.id} item={item} />
+          ))}
+        </div>
       </section>
 
       {(litbangItems ?? []).length > 0 && (

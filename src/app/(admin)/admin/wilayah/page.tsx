@@ -1,10 +1,10 @@
 import { PaginationBar } from "@/components/admin/pagination-bar";
-import { LabelJemaatEditor } from "@/components/admin/label-jemaat-editor";
+import { WilayahEditor } from "@/components/admin/wilayah-editor";
 import { parsePageSize } from "@/lib/pagination";
 import { getAuthenticatedUser, hasPermission, requirePermission } from "@/lib/rbac/dal";
 import { createClient } from "@/lib/supabase/server";
 
-export default async function LabelJemaatPage({
+export default async function WilayahPage({
   searchParams,
 }: {
   searchParams: Promise<{ page?: string; pageSize?: string }>;
@@ -21,7 +21,7 @@ export default async function LabelJemaatPage({
 
   const supabase = await createClient();
   const { data: items, count } = await supabase
-    .from("label_jemaat")
+    .from("wilayah")
     .select("*", { count: "exact" })
     .order("sort_order")
     .range(from, to);
@@ -29,14 +29,13 @@ export default async function LabelJemaatPage({
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold">Label Jemaat</h1>
+        <h1 className="text-2xl font-semibold">Wilayah</h1>
         <p className="text-muted-foreground">
-          Jabatan/label yang bisa dipilih (lebih dari satu) untuk tiap jemaat di halaman Jemaat,
-          dan dipakai untuk mengelompokkan dropdown Petugas.
+          Daftar wilayah yang bisa dipilih saat mengisi jadwal Kebaktian Rumah Tangga.
         </p>
       </div>
-      <LabelJemaatEditor items={items ?? []} disabled={!canEdit} />
-      <PaginationBar page={page} pageSize={pageSize} totalItems={count ?? 0} entryLabel="label" />
+      <WilayahEditor items={items ?? []} disabled={!canEdit} />
+      <PaginationBar page={page} pageSize={pageSize} totalItems={count ?? 0} entryLabel="wilayah" />
     </div>
   );
 }

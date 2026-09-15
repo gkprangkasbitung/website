@@ -31,6 +31,7 @@ export default async function EditWartaPage({ params }: { params: Promise<{ id: 
     { data: peribadahanCategories },
     { data: peribadahanItems },
     { data: tempatList },
+    { data: wilayahList },
     { data: jemaatList },
     { data: saranaDana },
     { data: litbangItems },
@@ -43,6 +44,7 @@ export default async function EditWartaPage({ params }: { params: Promise<{ id: 
       .eq("tanggal", warta.tanggal_kebaktian)
       .order("sort_order"),
     supabase.from("tempat").select("*").order("sort_order"),
+    supabase.from("wilayah").select("*").order("sort_order"),
     supabase.from("jemaat").select(JEMAAT_SELECT_WITH_LABELS).order("nama"),
     supabase.from("sarana_dana_balances").select("*").order("key"),
     supabase.from("warta_litbang_items").select("*").eq("warta_id", id).order("sort_order"),
@@ -81,6 +83,7 @@ export default async function EditWartaPage({ params }: { params: Promise<{ id: 
           items={peribadahanItems ?? []}
           categories={peribadahanCategories ?? []}
           tempatList={tempatList ?? []}
+          wilayahList={wilayahList ?? []}
           jemaatList={jemaatWithLabels}
           disabled={!canUpdate}
         />

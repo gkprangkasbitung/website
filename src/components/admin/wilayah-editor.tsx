@@ -22,21 +22,20 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import type { Tempat } from "@/types/warta";
+import type { Wilayah } from "@/types/warta";
 
-function EditTempatDialog({ tempat, disabled }: { tempat: Tempat; disabled?: boolean }) {
+function EditWilayahDialog({ wilayah, disabled }: { wilayah: Wilayah; disabled?: boolean }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
-  const [nama, setNama] = useState(tempat.nama);
-  const [keterangan, setKeterangan] = useState(tempat.keterangan ?? "");
+  const [nama, setNama] = useState(wilayah.nama);
   const [isPending, startTransition] = useTransition();
 
   function onSave() {
     startTransition(async () => {
-      const res = await fetch(`/api/admin/tempat/${tempat.id}`, {
+      const res = await fetch(`/api/admin/wilayah/${wilayah.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nama, keterangan }),
+        body: JSON.stringify({ nama }),
       });
 
       if (!res.ok) {
@@ -53,7 +52,7 @@ function EditTempatDialog({ tempat, disabled }: { tempat: Tempat; disabled?: boo
 
   function onDelete() {
     startTransition(async () => {
-      const res = await fetch(`/api/admin/tempat/${tempat.id}`, { method: "DELETE" });
+      const res = await fetch(`/api/admin/wilayah/${wilayah.id}`, { method: "DELETE" });
 
       if (!res.ok) {
         const data = await res.json().catch(() => null);
@@ -61,7 +60,7 @@ function EditTempatDialog({ tempat, disabled }: { tempat: Tempat; disabled?: boo
         return;
       }
 
-      toast.success("Tempat dihapus");
+      toast.success("Wilayah dihapus");
       setOpen(false);
       router.refresh();
     });
@@ -74,7 +73,7 @@ function EditTempatDialog({ tempat, disabled }: { tempat: Tempat; disabled?: boo
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{tempat.nama}</DialogTitle>
+          <DialogTitle>{wilayah.nama}</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
           <div className="space-y-2">
@@ -84,16 +83,6 @@ function EditTempatDialog({ tempat, disabled }: { tempat: Tempat; disabled?: boo
               value={nama}
               onChange={(e) => setNama(e.target.value)}
               disabled={disabled || isPending}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="keterangan">Keterangan</Label>
-            <Input
-              id="keterangan"
-              value={keterangan}
-              onChange={(e) => setKeterangan(e.target.value)}
-              disabled={disabled || isPending}
-              placeholder="Alamat/keterangan"
             />
           </div>
           {!disabled && (
@@ -112,46 +101,44 @@ function EditTempatDialog({ tempat, disabled }: { tempat: Tempat; disabled?: boo
   );
 }
 
-function TempatRow({ tempat, disabled }: { tempat: Tempat; disabled?: boolean }) {
+function WilayahRow({ wilayah, disabled }: { wilayah: Wilayah; disabled?: boolean }) {
   return (
     <TableRow>
-      <TableCell>{tempat.nama}</TableCell>
-      <TableCell className="max-w-64 truncate">{tempat.keterangan ?? "-"}</TableCell>
+      <TableCell>{wilayah.nama}</TableCell>
       <TableCell>
-        <EditTempatDialog tempat={tempat} disabled={disabled} />
+        <EditWilayahDialog wilayah={wilayah} disabled={disabled} />
       </TableCell>
     </TableRow>
   );
 }
 
-function AddTempatDialog() {
+function AddWilayahDialog() {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
 
   function onSubmit(formData: FormData) {
     const nama = formData.get("nama");
-    const keterangan = formData.get("keterangan");
 
     if (typeof nama !== "string" || !nama.trim()) {
-      toast.error("Nama tempat wajib diisi");
+      toast.error("Nama wilayah wajib diisi");
       return;
     }
 
     startTransition(async () => {
-      const res = await fetch("/api/admin/tempat", {
+      const res = await fetch("/api/admin/wilayah", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nama, keterangan }),
+        body: JSON.stringify({ nama }),
       });
 
       if (!res.ok) {
         const data = await res.json().catch(() => null);
-        toast.error(data?.error ?? "Gagal menambah tempat");
+        toast.error(data?.error ?? "Gagal menambah wilayah");
         return;
       }
 
-      toast.success("Tempat ditambahkan");
+      toast.success("Wilayah ditambahkan");
       setOpen(false);
       router.refresh();
     });
@@ -159,19 +146,15 @@ function AddTempatDialog() {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={<Button size="sm" />}>Tambah Tempat</DialogTrigger>
+      <DialogTrigger render={<Button size="sm" />}>Tambah Wilayah</DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Tambah Tempat</DialogTitle>
+          <DialogTitle>Tambah Wilayah</DialogTitle>
         </DialogHeader>
         <form action={onSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="nama">Nama</Label>
             <Input id="nama" name="nama" required />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="keterangan">Keterangan</Label>
-            <Input id="keterangan" name="keterangan" placeholder="Alamat/keterangan" />
           </div>
           <DialogFooter>
             <Button type="submit" disabled={isPending}>
@@ -184,30 +167,29 @@ function AddTempatDialog() {
   );
 }
 
-export function TempatEditor({ items, disabled }: { items: Tempat[]; disabled?: boolean }) {
+export function WilayahEditor({ items, disabled }: { items: Wilayah[]; disabled?: boolean }) {
   return (
     <div className="space-y-4">
       {!disabled && (
         <div className="flex justify-end">
-          <AddTempatDialog />
+          <AddWilayahDialog />
         </div>
       )}
       <Table>
         <TableHeader>
           <TableRow>
             <TableHead>Nama</TableHead>
-            <TableHead>Keterangan</TableHead>
             <TableHead></TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {items.map((item) => (
-            <TempatRow key={item.id} tempat={item} disabled={disabled} />
+            <WilayahRow key={item.id} wilayah={item} disabled={disabled} />
           ))}
           {items.length === 0 && (
             <TableRow>
-              <TableCell colSpan={3} className="text-sm text-muted-foreground">
-                Belum ada tempat.
+              <TableCell colSpan={2} className="text-sm text-muted-foreground">
+                Belum ada wilayah.
               </TableCell>
             </TableRow>
           )}
