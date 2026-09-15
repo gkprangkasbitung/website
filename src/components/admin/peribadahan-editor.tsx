@@ -6,6 +6,17 @@ import { toast } from "sonner";
 import { SortableTableHead } from "@/components/admin/sortable-table-head";
 import { Button } from "@/components/ui/button";
 import {
+  Combobox,
+  ComboboxAnchor,
+  ComboboxEmpty,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxList,
+  ComboboxPopup,
+  ComboboxPortal,
+  ComboboxPositioner,
+} from "@/components/ui/combobox";
+import {
   Dialog,
   DialogContent,
   DialogFooter,
@@ -19,9 +30,7 @@ import { formatTanggalPanjang, nextSundayIso } from "@/lib/date";
 import {
   Select,
   SelectContent,
-  SelectGroup,
   SelectItem,
-  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
@@ -149,19 +158,9 @@ const FIELD_CONFIG: Record<string, FieldConfig> = {
 
 const FALLBACK_FIELD_CONFIG = FIELD_CONFIG.umum;
 
-/** A jemaat with multiple labels appears once under each of their labels. */
-function groupJemaatByLabel(jemaat: JemaatWithLabels[]) {
-  const groups = new Map<string, JemaatWithLabels[]>();
-  for (const j of jemaat) {
-    const labelNames = j.labels.length > 0 ? j.labels.map((l) => l.nama) : ["Lainnya"];
-    for (const name of labelNames) {
-      if (!groups.has(name)) groups.set(name, []);
-      groups.get(name)!.push(j);
-    }
-  }
-  return Array.from(groups.entries());
-}
-
+/** Searchable jemaat picker: typing matches against the person's name OR
+ * any of their labels (e.g. typing "Liturgos" surfaces everyone tagged
+ * with that label), so a long congregation list stays easy to narrow down. */
 function JemaatSelect({
   value,
   onChange,
@@ -175,27 +174,46 @@ function JemaatSelect({
   placeholder: string;
   disabled?: boolean;
 }) {
-  const groups = groupJemaatByLabel(jemaatList);
-  const items = Object.fromEntries(jemaatList.map((j) => [j.id, j.nama]));
+  const jemaatById = new Map(jemaatList.map((j) => [j.id, j]));
 
   return (
-    <Select value={value ?? undefined} onValueChange={onChange} items={items} disabled={disabled}>
-      <SelectTrigger className="w-full">
-        <SelectValue placeholder={placeholder} />
-      </SelectTrigger>
-      <SelectContent>
-        {groups.map(([label, members]) => (
-          <SelectGroup key={label}>
-            <SelectLabel>{label}</SelectLabel>
-            {members.map((m) => (
-              <SelectItem key={m.id} value={m.id}>
-                {m.nama}
-              </SelectItem>
-            ))}
-          </SelectGroup>
-        ))}
-      </SelectContent>
-    </Select>
+    <Combobox
+      items={jemaatList}
+      value={value}
+      onValueChange={onChange}
+      itemToStringLabel={(id: string | null) => (id ? (jemaatById.get(id)?.nama ?? "") : "")}
+      filter={(item: JemaatWithLabels, query: string) => {
+        const q = query.toLowerCase();
+        return (
+          item.nama.toLowerCase().includes(q) ||
+          item.labels.some((l) => l.nama.toLowerCase().includes(q))
+        );
+      }}
+      disabled={disabled}
+    >
+      <ComboboxAnchor>
+        <ComboboxInput placeholder={placeholder} />
+      </ComboboxAnchor>
+      <ComboboxPortal>
+        <ComboboxPositioner>
+          <ComboboxPopup>
+            <ComboboxEmpty>Tidak ditemukan</ComboboxEmpty>
+            <ComboboxList>
+              {(item: JemaatWithLabels) => (
+                <ComboboxItem key={item.id} value={item.id}>
+                  <span>{item.nama}</span>
+                  {item.labels.length > 0 && (
+                    <span className="ml-auto text-xs text-muted-foreground">
+                      {item.labels.map((l) => l.nama).join(", ")}
+                    </span>
+                  )}
+                </ComboboxItem>
+              )}
+            </ComboboxList>
+          </ComboboxPopup>
+        </ComboboxPositioner>
+      </ComboboxPortal>
+    </Combobox>
   );
 }
 

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 const NAV_LINKS = [
   { href: "/", label: "Beranda" },
@@ -16,12 +17,13 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
           <Link href="/" className="font-semibold">
             GKP Rangkasbitung
           </Link>
-          <nav className="flex gap-6 text-sm">
+          <nav className="flex items-center gap-6 text-sm">
             {NAV_LINKS.map((link) => (
               <Link key={link.href} href={link.href} className="hover:underline">
                 {link.label}
               </Link>
             ))}
+            <ThemeToggle />
           </nav>
         </div>
       </header>

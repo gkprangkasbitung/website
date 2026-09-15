@@ -3,6 +3,7 @@ import { getAuthenticatedUser, hasPermission } from "@/lib/rbac/dal";
 import { logout } from "@/app/login/actions";
 import { createClient } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/button";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const user = await getAuthenticatedUser();
@@ -88,11 +89,14 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           <div className="text-sm text-muted-foreground">
             {user.email} · {user.roles.map((r) => r.name).join(", ") || "tanpa role"}
           </div>
-          <form action={logout}>
-            <Button type="submit" variant="outline" size="sm">
-              Keluar
-            </Button>
-          </form>
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <form action={logout}>
+              <Button type="submit" variant="outline" size="sm">
+                Keluar
+              </Button>
+            </form>
+          </div>
         </header>
         <main className="flex-1 p-6">{children}</main>
       </div>
