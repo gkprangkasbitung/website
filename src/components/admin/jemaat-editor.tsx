@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
+import { SortableTableHead } from "@/components/admin/sortable-table-head";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -266,7 +267,7 @@ export function JemaatEditor({
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Nama</TableHead>
+            <SortableTableHead sortKey="nama">Nama</SortableTableHead>
             <TableHead>Label/Jabatan</TableHead>
             <TableHead></TableHead>
           </TableRow>

@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
+import { SortableTableHead } from "@/components/admin/sortable-table-head";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -208,10 +209,10 @@ export function SaranaDanaLedger({
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Tanggal</TableHead>
-            <TableHead>Tipe</TableHead>
-            <TableHead>Jumlah</TableHead>
-            <TableHead>Keterangan</TableHead>
+            <SortableTableHead sortKey="tanggal">Tanggal</SortableTableHead>
+            <SortableTableHead sortKey="tipe">Tipe</SortableTableHead>
+            <SortableTableHead sortKey="jumlah">Jumlah</SortableTableHead>
+            <SortableTableHead sortKey="keterangan">Keterangan</SortableTableHead>
             <TableHead></TableHead>
           </TableRow>
         </TableHeader>

@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
+import { SortableTableHead } from "@/components/admin/sortable-table-head";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -178,7 +179,7 @@ export function WilayahEditor({ items, disabled }: { items: Wilayah[]; disabled?
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Nama</TableHead>
+            <SortableTableHead sortKey="nama">Nama</SortableTableHead>
             <TableHead></TableHead>
           </TableRow>
         </TableHeader>

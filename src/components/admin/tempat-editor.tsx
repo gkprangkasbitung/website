@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
+import { SortableTableHead } from "@/components/admin/sortable-table-head";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -195,8 +196,8 @@ export function TempatEditor({ items, disabled }: { items: Tempat[]; disabled?: 
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Nama</TableHead>
-            <TableHead>Keterangan</TableHead>
+            <SortableTableHead sortKey="nama">Nama</SortableTableHead>
+            <SortableTableHead sortKey="keterangan">Keterangan</SortableTableHead>
             <TableHead></TableHead>
           </TableRow>
         </TableHeader>

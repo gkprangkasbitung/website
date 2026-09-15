@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
+import { SortableTableHead } from "@/components/admin/sortable-table-head";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -890,6 +891,9 @@ export function PeribadahanEditor({
   disabled?: boolean;
 }) {
   const showCategory = !lockedCategoryId;
+  /** Sorting is only meaningful across many dates - inside a warta (fixed
+   * tanggal) every row already shares the same date. */
+  const sortable = !tanggal;
 
   return (
     <div className="space-y-4">
@@ -901,8 +905,16 @@ export function PeribadahanEditor({
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Tanggal</TableHead>
-            <TableHead>Waktu</TableHead>
+            {sortable ? (
+              <SortableTableHead sortKey="tanggal">Tanggal</SortableTableHead>
+            ) : (
+              <TableHead>Tanggal</TableHead>
+            )}
+            {sortable ? (
+              <SortableTableHead sortKey="jam">Waktu</SortableTableHead>
+            ) : (
+              <TableHead>Waktu</TableHead>
+            )}
             {showCategory && <TableHead>Jenis</TableHead>}
             <TableHead>Ringkasan</TableHead>
             <TableHead></TableHead>

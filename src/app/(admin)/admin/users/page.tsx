@@ -1,4 +1,6 @@
 import { PaginationBar } from "@/components/admin/pagination-bar";
+import { SortableTableHead } from "@/components/admin/sortable-table-head";
+import { TableSearchInput } from "@/components/admin/table-search-input";
 import {
   Table,
   TableBody,
@@ -9,15 +11,18 @@ import {
 } from "@/components/ui/table";
 import { parsePageSize } from "@/lib/pagination";
 import { getAuthenticatedUser, hasPermission, requirePermission } from "@/lib/rbac/dal";
+import { parseSortDir, parseSortKey } from "@/lib/sort";
 import { createClient } from "@/lib/supabase/server";
 import { DeleteUserButton } from "./delete-user-button";
 import { EditUserDialog } from "./edit-user-dialog";
 import { InviteUserDialog } from "./invite-user-dialog";
 
+const SORT_COLUMNS = ["full_name", "email"] as const;
+
 export default async function UsersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string; pageSize?: string }>;
+  searchParams: Promise<{ page?: string; pageSize?: string; sort?: string; dir?: string; q?: string }>;
 }) {
   await requirePermission("users", "read");
 
@@ -26,20 +31,24 @@ export default async function UsersPage({
   const canInvite = hasPermission(currentUser, "users", "create");
   const canDelete = hasPermission(currentUser, "users", "delete");
 
-  const { page: pageParam, pageSize: pageSizeParam } = await searchParams;
+  const { page: pageParam, pageSize: pageSizeParam, sort, dir, q } = await searchParams;
   const pageSize = parsePageSize(pageSizeParam);
   const page = Math.max(1, Number(pageParam) || 1);
-  const from = (page - 1) * pageSize;
-  const to = from + pageSize - 1;
+  const rangeFrom = (page - 1) * pageSize;
+  const rangeTo = rangeFrom + pageSize - 1;
+  const sortKey = parseSortKey(sort, SORT_COLUMNS) ?? "created_at";
+  const sortDir = parseSortDir(dir);
 
   const supabase = await createClient();
+  let profilesQuery = supabase
+    .from("profiles")
+    .select("id, email, full_name, jemaat_id, created_at", { count: "exact" });
+
+  if (q) profilesQuery = profilesQuery.or(`full_name.ilike.%${q}%,email.ilike.%${q}%`);
+
   const [{ data: profiles, count }, { data: roles }, { data: userRoles }, { data: jemaatList }] =
     await Promise.all([
-      supabase
-        .from("profiles")
-        .select("id, email, full_name, jemaat_id, created_at", { count: "exact" })
-        .order("created_at")
-        .range(from, to),
+      profilesQuery.order(sortKey, { ascending: sortDir === "asc" }).range(rangeFrom, rangeTo),
       supabase.from("roles").select("id, name").order("name"),
       supabase.from("user_roles").select("user_id, role_id"),
       supabase.from("jemaat").select("id, nama").order("nama"),
@@ -58,11 +67,12 @@ export default async function UsersPage({
         </div>
         {canInvite && <InviteUserDialog roles={roles ?? []} jemaatList={jemaatList ?? []} />}
       </div>
+      <TableSearchInput placeholder="Cari nama/email..." />
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Nama</TableHead>
-            <TableHead>Email</TableHead>
+            <SortableTableHead sortKey="full_name">Nama</SortableTableHead>
+            <SortableTableHead sortKey="email">Email</SortableTableHead>
             <TableHead>Role</TableHead>
             <TableHead>Jemaat</TableHead>
             <TableHead></TableHead>
