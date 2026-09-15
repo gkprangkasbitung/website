@@ -126,6 +126,239 @@ export interface Database {
           },
         ];
       };
+      warta: {
+        Row: {
+          id: string;
+          slug: string;
+          status: "draft" | "published";
+          tanggal_kebaktian: string;
+          judul_kebaktian: string;
+          tema_kebaktian: string | null;
+          renungan_judul: string | null;
+          renungan_kitab: string | null;
+          renungan_isi: string | null;
+          renungan_sumber: string | null;
+          created_by: string | null;
+          published_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          slug: string;
+          status?: "draft" | "published";
+          tanggal_kebaktian: string;
+          judul_kebaktian: string;
+          tema_kebaktian?: string | null;
+          renungan_judul?: string | null;
+          renungan_kitab?: string | null;
+          renungan_isi?: string | null;
+          renungan_sumber?: string | null;
+          created_by?: string | null;
+          published_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          slug?: string;
+          status?: "draft" | "published";
+          tanggal_kebaktian?: string;
+          judul_kebaktian?: string;
+          tema_kebaktian?: string | null;
+          renungan_judul?: string | null;
+          renungan_kitab?: string | null;
+          renungan_isi?: string | null;
+          renungan_sumber?: string | null;
+          created_by?: string | null;
+          published_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      peribadahan_categories: {
+        Row: {
+          id: string;
+          key: string;
+          name: string;
+          hari: string | null;
+          jam: string | null;
+          tempat: string | null;
+          petugas: string | null;
+          sort_order: number;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          key: string;
+          name: string;
+          hari?: string | null;
+          jam?: string | null;
+          tempat?: string | null;
+          petugas?: string | null;
+          sort_order?: number;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          key?: string;
+          name?: string;
+          hari?: string | null;
+          jam?: string | null;
+          tempat?: string | null;
+          petugas?: string | null;
+          sort_order?: number;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      sarana_dana_items: {
+        Row: {
+          id: string;
+          key: string;
+          name: string;
+          nominal: number;
+          keterangan: string | null;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          key: string;
+          name: string;
+          nominal?: number;
+          keterangan?: string | null;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          key?: string;
+          name?: string;
+          nominal?: number;
+          keterangan?: string | null;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      litbang_categories: {
+        Row: {
+          id: string;
+          key: string;
+          name: string;
+          hari: string | null;
+          jam: string | null;
+          tempat: string | null;
+          petugas: string | null;
+          sort_order: number;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          key: string;
+          name: string;
+          hari?: string | null;
+          jam?: string | null;
+          tempat?: string | null;
+          petugas?: string | null;
+          sort_order?: number;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          key?: string;
+          name?: string;
+          hari?: string | null;
+          jam?: string | null;
+          tempat?: string | null;
+          petugas?: string | null;
+          sort_order?: number;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      warta_litbang_items: {
+        Row: {
+          id: string;
+          warta_id: string;
+          litbang_category_id: string | null;
+          name: string;
+          hari: string | null;
+          jam: string | null;
+          tempat: string | null;
+          petugas: string | null;
+          sort_order: number;
+        };
+        Insert: {
+          id?: string;
+          warta_id: string;
+          litbang_category_id?: string | null;
+          name: string;
+          hari?: string | null;
+          jam?: string | null;
+          tempat?: string | null;
+          petugas?: string | null;
+          sort_order?: number;
+        };
+        Update: {
+          id?: string;
+          warta_id?: string;
+          litbang_category_id?: string | null;
+          name?: string;
+          hari?: string | null;
+          jam?: string | null;
+          tempat?: string | null;
+          petugas?: string | null;
+          sort_order?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "warta_litbang_items_warta_id_fkey";
+            columns: ["warta_id"];
+            isOneToOne: false;
+            referencedRelation: "warta";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "warta_litbang_items_litbang_category_id_fkey";
+            columns: ["litbang_category_id"];
+            isOneToOne: false;
+            referencedRelation: "litbang_categories";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      warta_kesaksian_items: {
+        Row: {
+          id: string;
+          warta_id: string;
+          judul: string;
+          deskripsi: string | null;
+          sort_order: number;
+        };
+        Insert: {
+          id?: string;
+          warta_id: string;
+          judul: string;
+          deskripsi?: string | null;
+          sort_order?: number;
+        };
+        Update: {
+          id?: string;
+          warta_id?: string;
+          judul?: string;
+          deskripsi?: string | null;
+          sort_order?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "warta_kesaksian_items_warta_id_fkey";
+            columns: ["warta_id"];
+            isOneToOne: false;
+            referencedRelation: "warta";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;

@@ -6,8 +6,14 @@ import { Button } from "@/components/ui/button";
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const user = await getAuthenticatedUser();
 
+  const canReadWarta = hasPermission(user, "warta", "read");
+
   const navItems = [
     { href: "/admin", label: "Dashboard", show: true },
+    { href: "/admin/warta", label: "Warta", show: canReadWarta },
+    { href: "/admin/peribadahan", label: "Peribadahan", show: canReadWarta },
+    { href: "/admin/litbang", label: "Litbang", show: canReadWarta },
+    { href: "/admin/sarana-dana", label: "Sarana & Dana", show: canReadWarta },
     { href: "/admin/users", label: "Pengguna", show: hasPermission(user, "users", "read") },
     { href: "/admin/roles", label: "Roles & Permissions", show: hasPermission(user, "roles", "read") },
   ].filter((item) => item.show);

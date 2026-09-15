@@ -4,6 +4,7 @@ const NAV_LINKS = [
   { href: "/", label: "Beranda" },
   { href: "/tentang-kami", label: "Tentang Kami" },
   { href: "/jadwal-ibadah", label: "Jadwal Ibadah" },
+  { href: "/warta", label: "Warta" },
   { href: "/kontak", label: "Kontak" },
 ];
 
