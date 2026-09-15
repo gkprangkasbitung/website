@@ -1,7 +1,7 @@
-import Link from "next/link";
 import { getAuthenticatedUser, hasPermission } from "@/lib/rbac/dal";
 import { logout } from "@/app/login/actions";
 import { createClient } from "@/lib/supabase/server";
+import { AdminNav } from "@/components/admin/admin-nav";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme-toggle";
 
@@ -58,31 +58,15 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   ].filter((item) => item.show);
 
   return (
-    <div className="grid min-h-svh grid-cols-[240px_1fr]">
-      <aside className="border-r bg-muted/30 p-4">
-        <div className="mb-6 px-2 text-sm font-semibold">GKP Rangkasbitung — Admin</div>
-        <nav className="space-y-1">
-          {navItems.map((item) => (
-            <div key={item.href}>
-              <Link href={item.href} className="block rounded px-2 py-1.5 text-sm hover:bg-muted">
-                {item.label}
-              </Link>
-              {item.children.length > 0 && (
-                <div className="ml-3 space-y-1 border-l pl-2">
-                  {item.children.map((child) => (
-                    <Link
-                      key={child.href}
-                      href={child.href}
-                      className="block rounded px-2 py-1 text-sm text-muted-foreground hover:bg-muted hover:text-foreground"
-                    >
-                      {child.label}
-                    </Link>
-                  ))}
-                </div>
-              )}
-            </div>
-          ))}
-        </nav>
+    <div className="admin-theme grid min-h-svh grid-cols-[240px_1fr] bg-background text-foreground">
+      <aside className="bg-sidebar p-4 text-sidebar-foreground">
+        <div className="mb-6 flex items-center gap-2.5 px-2">
+          <span className="grid size-8 shrink-0 place-items-center bg-sidebar-primary text-xs font-extrabold text-sidebar-primary-foreground">
+            GKP
+          </span>
+          <span className="text-sm leading-tight font-extrabold">GKP Rangkasbitung</span>
+        </div>
+        <AdminNav items={navItems} />
       </aside>
       <div className="flex flex-col">
         <header className="flex items-center justify-between border-b px-6 py-3">
