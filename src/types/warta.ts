@@ -54,6 +54,21 @@ export interface JemaatWithLabels extends Jemaat {
   labels: LabelJemaat[];
 }
 
+export type JenisKelamin = "laki_laki" | "perempuan";
+
+/** Full jemaat profile fields, used on the Jemaat admin page. */
+export interface JemaatProfile extends JemaatWithLabels {
+  jenis_kelamin: JenisKelamin | null;
+  alamat: string | null;
+  wilayah_id: string | null;
+  no_hp: string | null;
+  tanggal_lahir: string | null;
+  tanggal_masuk: string | null;
+  sudah_baptis: boolean;
+  sudah_sidi: boolean;
+  wilayah: Pick<Wilayah, "id" | "nama"> | null;
+}
+
 export interface PeribadahanItem {
   id: string;
   category_id: string;

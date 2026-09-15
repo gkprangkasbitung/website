@@ -5,6 +5,7 @@ import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { SortableTableHead } from "@/components/admin/sortable-table-head";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -30,7 +31,70 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import type { JemaatWithLabels, LabelJemaat } from "@/types/warta";
+import type { JemaatProfile, JenisKelamin, LabelJemaat, Wilayah } from "@/types/warta";
+
+const JENIS_KELAMIN_LABEL: Record<JenisKelamin, string> = {
+  laki_laki: "Laki-laki",
+  perempuan: "Perempuan",
+};
+
+type ProfileFormValues = {
+  nama: string;
+  labelIds: string[];
+  jenis_kelamin: JenisKelamin | null;
+  alamat: string;
+  wilayah_id: string | null;
+  no_hp: string;
+  tanggal_lahir: string;
+  tanggal_masuk: string;
+  sudah_baptis: boolean;
+  sudah_sidi: boolean;
+};
+
+function emptyValues(): ProfileFormValues {
+  return {
+    nama: "",
+    labelIds: [],
+    jenis_kelamin: null,
+    alamat: "",
+    wilayah_id: null,
+    no_hp: "",
+    tanggal_lahir: "",
+    tanggal_masuk: "",
+    sudah_baptis: false,
+    sudah_sidi: false,
+  };
+}
+
+function valuesFromJemaat(jemaat: JemaatProfile): ProfileFormValues {
+  return {
+    nama: jemaat.nama,
+    labelIds: jemaat.labels.map((l) => l.id),
+    jenis_kelamin: jemaat.jenis_kelamin,
+    alamat: jemaat.alamat ?? "",
+    wilayah_id: jemaat.wilayah_id,
+    no_hp: jemaat.no_hp ?? "",
+    tanggal_lahir: jemaat.tanggal_lahir ?? "",
+    tanggal_masuk: jemaat.tanggal_masuk ?? "",
+    sudah_baptis: jemaat.sudah_baptis,
+    sudah_sidi: jemaat.sudah_sidi,
+  };
+}
+
+function toPayload(values: ProfileFormValues) {
+  return {
+    nama: values.nama,
+    label_ids: values.labelIds,
+    jenis_kelamin: values.jenis_kelamin,
+    alamat: values.alamat.trim() || null,
+    wilayah_id: values.wilayah_id,
+    no_hp: values.no_hp.trim() || null,
+    tanggal_lahir: values.tanggal_lahir || null,
+    tanggal_masuk: values.tanggal_masuk || null,
+    sudah_baptis: values.sudah_baptis,
+    sudah_sidi: values.sudah_sidi,
+  };
+}
 
 function LabelMultiSelect({
   allLabels,
@@ -72,27 +136,192 @@ function LabelMultiSelect({
   );
 }
 
+function JenisKelaminSelect({
+  value,
+  onChange,
+  disabled,
+}: {
+  value: JenisKelamin | null;
+  onChange: (value: JenisKelamin) => void;
+  disabled?: boolean;
+}) {
+  return (
+    <Select
+      value={value ?? undefined}
+      onValueChange={(v) => v && onChange(v as JenisKelamin)}
+      items={JENIS_KELAMIN_LABEL}
+      disabled={disabled}
+    >
+      <SelectTrigger className="w-full">
+        <SelectValue placeholder="Pilih jenis kelamin" />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="laki_laki">Laki-laki</SelectItem>
+        <SelectItem value="perempuan">Perempuan</SelectItem>
+      </SelectContent>
+    </Select>
+  );
+}
+
+function WilayahSelect({
+  value,
+  onChange,
+  allWilayah,
+  disabled,
+}: {
+  value: string | null;
+  onChange: (value: string) => void;
+  allWilayah: Wilayah[];
+  disabled?: boolean;
+}) {
+  const items = Object.fromEntries(allWilayah.map((w) => [w.id, w.nama]));
+
+  return (
+    <Select
+      value={value ?? undefined}
+      onValueChange={(v) => v && onChange(v)}
+      items={items}
+      disabled={disabled}
+    >
+      <SelectTrigger className="w-full">
+        <SelectValue placeholder="Pilih wilayah" />
+      </SelectTrigger>
+      <SelectContent>
+        {allWilayah.map((w) => (
+          <SelectItem key={w.id} value={w.id}>
+            {w.nama}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+}
+
+function ProfileFields({
+  values,
+  set,
+  allLabels,
+  allWilayah,
+  disabled,
+}: {
+  values: ProfileFormValues;
+  set: <K extends keyof ProfileFormValues>(key: K, value: ProfileFormValues[K]) => void;
+  allLabels: LabelJemaat[];
+  allWilayah: Wilayah[];
+  disabled?: boolean;
+}) {
+  return (
+    <>
+      <div className="space-y-2">
+        <Label htmlFor="nama">Nama</Label>
+        <Input
+          id="nama"
+          value={values.nama}
+          onChange={(e) => set("nama", e.target.value)}
+          disabled={disabled}
+        />
+      </div>
+      <div className="space-y-2">
+        <Label>Label/Jabatan</Label>
+        <LabelMultiSelect allLabels={allLabels} value={values.labelIds} onChange={(v) => set("labelIds", v)} disabled={disabled} />
+      </div>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div className="space-y-2">
+          <Label>Jenis Kelamin</Label>
+          <JenisKelaminSelect
+            value={values.jenis_kelamin}
+            onChange={(v) => set("jenis_kelamin", v)}
+            disabled={disabled}
+          />
+        </div>
+        <div className="space-y-2">
+          <Label>Wilayah</Label>
+          <WilayahSelect
+            value={values.wilayah_id}
+            onChange={(v) => set("wilayah_id", v)}
+            allWilayah={allWilayah}
+            disabled={disabled}
+          />
+        </div>
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="alamat">Alamat</Label>
+        <Input id="alamat" value={values.alamat} onChange={(e) => set("alamat", e.target.value)} disabled={disabled} />
+      </div>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div className="space-y-2">
+          <Label htmlFor="no_hp">Nomor HP/WA</Label>
+          <Input id="no_hp" value={values.no_hp} onChange={(e) => set("no_hp", e.target.value)} disabled={disabled} />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="tanggal_lahir">Tanggal Lahir</Label>
+          <Input
+            id="tanggal_lahir"
+            type="date"
+            value={values.tanggal_lahir}
+            onChange={(e) => set("tanggal_lahir", e.target.value)}
+            disabled={disabled}
+          />
+        </div>
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="tanggal_masuk">Tanggal Masuk</Label>
+        <Input
+          id="tanggal_masuk"
+          type="date"
+          value={values.tanggal_masuk}
+          onChange={(e) => set("tanggal_masuk", e.target.value)}
+          disabled={disabled}
+        />
+      </div>
+      <div className="flex flex-wrap gap-4">
+        <label className="flex items-center gap-1.5 text-sm">
+          <Checkbox
+            checked={values.sudah_baptis}
+            onCheckedChange={(checked) => set("sudah_baptis", checked === true)}
+            disabled={disabled}
+          />
+          Sudah Dibaptis
+        </label>
+        <label className="flex items-center gap-1.5 text-sm">
+          <Checkbox
+            checked={values.sudah_sidi}
+            onCheckedChange={(checked) => set("sudah_sidi", checked === true)}
+            disabled={disabled}
+          />
+          Sudah Pengakuan Iman (Sidi)
+        </label>
+      </div>
+    </>
+  );
+}
+
 function EditJemaatDialog({
   jemaat,
   allLabels,
+  allWilayah,
   disabled,
 }: {
-  jemaat: JemaatWithLabels;
+  jemaat: JemaatProfile;
   allLabels: LabelJemaat[];
+  allWilayah: Wilayah[];
   disabled?: boolean;
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
-  const [nama, setNama] = useState(jemaat.nama);
-  const [labelIds, setLabelIds] = useState(jemaat.labels.map((l) => l.id));
+  const [values, setValues] = useState<ProfileFormValues>(() => valuesFromJemaat(jemaat));
   const [isPending, startTransition] = useTransition();
+
+  function set<K extends keyof ProfileFormValues>(key: K, value: ProfileFormValues[K]) {
+    setValues((prev) => ({ ...prev, [key]: value }));
+  }
 
   function onSave() {
     startTransition(async () => {
       const res = await fetch(`/api/admin/jemaat/${jemaat.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nama, label_ids: labelIds }),
+        body: JSON.stringify(toPayload(values)),
       });
 
       if (!res.ok) {
@@ -124,33 +353,28 @@ function EditJemaatDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        setOpen(next);
+        if (next) setValues(valuesFromJemaat(jemaat));
+      }}
+    >
       <DialogTrigger render={<Button size="sm" variant="outline" />}>
         {disabled ? "Lihat" : "Detail"}
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent className="max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{jemaat.nama}</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="nama">Nama</Label>
-            <Input
-              id="nama"
-              value={nama}
-              onChange={(e) => setNama(e.target.value)}
-              disabled={disabled || isPending}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label>Label/Jabatan</Label>
-            <LabelMultiSelect
-              allLabels={allLabels}
-              value={labelIds}
-              onChange={setLabelIds}
-              disabled={disabled || isPending}
-            />
-          </div>
+          <ProfileFields
+            values={values}
+            set={set}
+            allLabels={allLabels}
+            allWilayah={allWilayah}
+            disabled={disabled || isPending}
+          />
           {!disabled && (
             <DialogFooter>
               <Button size="sm" variant="ghost" onClick={onDelete} disabled={isPending}>
@@ -170,32 +394,39 @@ function EditJemaatDialog({
 function JemaatRow({
   jemaat,
   allLabels,
+  allWilayah,
   disabled,
 }: {
-  jemaat: JemaatWithLabels;
+  jemaat: JemaatProfile;
   allLabels: LabelJemaat[];
+  allWilayah: Wilayah[];
   disabled?: boolean;
 }) {
   return (
     <TableRow>
       <TableCell>{jemaat.nama}</TableCell>
+      <TableCell>{jemaat.jenis_kelamin ? JENIS_KELAMIN_LABEL[jemaat.jenis_kelamin] : "-"}</TableCell>
+      <TableCell>{jemaat.wilayah?.nama ?? "-"}</TableCell>
       <TableCell>{jemaat.labels.length > 0 ? jemaat.labels.map((l) => l.nama).join(", ") : "-"}</TableCell>
       <TableCell>
-        <EditJemaatDialog jemaat={jemaat} allLabels={allLabels} disabled={disabled} />
+        <EditJemaatDialog jemaat={jemaat} allLabels={allLabels} allWilayah={allWilayah} disabled={disabled} />
       </TableCell>
     </TableRow>
   );
 }
 
-function AddJemaatDialog({ allLabels }: { allLabels: LabelJemaat[] }) {
+function AddJemaatDialog({ allLabels, allWilayah }: { allLabels: LabelJemaat[]; allWilayah: Wilayah[] }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
-  const [nama, setNama] = useState("");
-  const [labelIds, setLabelIds] = useState<string[]>([]);
+  const [values, setValues] = useState<ProfileFormValues>(emptyValues);
   const [isPending, startTransition] = useTransition();
 
+  function set<K extends keyof ProfileFormValues>(key: K, value: ProfileFormValues[K]) {
+    setValues((prev) => ({ ...prev, [key]: value }));
+  }
+
   function onSubmit() {
-    if (!nama.trim()) {
+    if (!values.nama.trim()) {
       toast.error("Nama jemaat wajib diisi");
       return;
     }
@@ -204,7 +435,7 @@ function AddJemaatDialog({ allLabels }: { allLabels: LabelJemaat[] }) {
       const res = await fetch("/api/admin/jemaat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nama, label_ids: labelIds }),
+        body: JSON.stringify(toPayload(values)),
       });
 
       if (!res.ok) {
@@ -215,8 +446,7 @@ function AddJemaatDialog({ allLabels }: { allLabels: LabelJemaat[] }) {
 
       toast.success("Jemaat ditambahkan");
       setOpen(false);
-      setNama("");
-      setLabelIds([]);
+      setValues(emptyValues());
       router.refresh();
     });
   }
@@ -224,19 +454,12 @@ function AddJemaatDialog({ allLabels }: { allLabels: LabelJemaat[] }) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger render={<Button size="sm" />}>Tambah Jemaat</DialogTrigger>
-      <DialogContent>
+      <DialogContent className="max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Tambah Jemaat</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="nama">Nama</Label>
-            <Input id="nama" value={nama} onChange={(e) => setNama(e.target.value)} disabled={isPending} />
-          </div>
-          <div className="space-y-2">
-            <Label>Label/Jabatan</Label>
-            <LabelMultiSelect allLabels={allLabels} value={labelIds} onChange={setLabelIds} disabled={isPending} />
-          </div>
+          <ProfileFields values={values} set={set} allLabels={allLabels} allWilayah={allWilayah} disabled={isPending} />
           <DialogFooter>
             <Button type="button" onClick={onSubmit} disabled={isPending}>
               {isPending ? "Menyimpan..." : "Tambah"}
@@ -251,34 +474,38 @@ function AddJemaatDialog({ allLabels }: { allLabels: LabelJemaat[] }) {
 export function JemaatEditor({
   items,
   allLabels,
+  allWilayah,
   disabled,
 }: {
-  items: JemaatWithLabels[];
+  items: JemaatProfile[];
   allLabels: LabelJemaat[];
+  allWilayah: Wilayah[];
   disabled?: boolean;
 }) {
   return (
     <div className="space-y-4">
       {!disabled && (
         <div className="flex justify-end">
-          <AddJemaatDialog allLabels={allLabels} />
+          <AddJemaatDialog allLabels={allLabels} allWilayah={allWilayah} />
         </div>
       )}
       <Table>
         <TableHeader>
           <TableRow>
             <SortableTableHead sortKey="nama">Nama</SortableTableHead>
+            <TableHead>Jenis Kelamin</TableHead>
+            <TableHead>Wilayah</TableHead>
             <TableHead>Label/Jabatan</TableHead>
             <TableHead></TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {items.map((item) => (
-            <JemaatRow key={item.id} jemaat={item} allLabels={allLabels} disabled={disabled} />
+            <JemaatRow key={item.id} jemaat={item} allLabels={allLabels} allWilayah={allWilayah} disabled={disabled} />
           ))}
           {items.length === 0 && (
             <TableRow>
-              <TableCell colSpan={3} className="text-sm text-muted-foreground">
+              <TableCell colSpan={5} className="text-sm text-muted-foreground">
                 Belum ada jemaat.
               </TableCell>
             </TableRow>

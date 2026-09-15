@@ -2,6 +2,31 @@ import { NextResponse } from "next/server";
 import { requirePermissionApi } from "@/lib/rbac/dal";
 import { createClient } from "@/lib/supabase/server";
 import { JEMAAT_SELECT_WITH_LABELS, flattenJemaatLabels } from "@/lib/jemaat";
+import type { Database } from "@/types/database";
+
+type JemaatInsert = Database["public"]["Tables"]["jemaat"]["Insert"];
+
+const PROFILE_FIELDS = [
+  "jenis_kelamin",
+  "alamat",
+  "wilayah_id",
+  "no_hp",
+  "tanggal_lahir",
+  "tanggal_masuk",
+  "sudah_baptis",
+  "sudah_sidi",
+] as const;
+
+function pickProfileFields(body: Record<string, unknown>) {
+  const update: Partial<JemaatInsert> = {};
+  for (const field of PROFILE_FIELDS) {
+    if (field in body) {
+      // @ts-expect-error - narrow whitelist of known Jemaat columns, value shape matches Insert/Update
+      update[field] = body[field];
+    }
+  }
+  return update;
+}
 
 export async function GET() {
   const auth = await requirePermissionApi("warta", "read");
@@ -39,7 +64,7 @@ export async function POST(request: Request) {
   const supabase = await createClient();
   const { data: jemaat, error: insertError } = await supabase
     .from("jemaat")
-    .insert({ nama: nama.trim() })
+    .insert({ nama: nama.trim(), ...pickProfileFields(body ?? {}) })
     .select()
     .single();
 

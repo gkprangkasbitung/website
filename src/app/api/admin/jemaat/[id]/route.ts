@@ -1,10 +1,32 @@
 import { NextResponse } from "next/server";
 import { requirePermissionApi } from "@/lib/rbac/dal";
 import { createClient } from "@/lib/supabase/server";
-import { JEMAAT_SELECT_WITH_LABELS, flattenJemaatLabels } from "@/lib/jemaat";
+import { JEMAAT_SELECT_FULL, flattenJemaatLabels } from "@/lib/jemaat";
 import type { Database } from "@/types/database";
 
 type JemaatUpdate = Database["public"]["Tables"]["jemaat"]["Update"];
+
+const PROFILE_FIELDS = [
+  "jenis_kelamin",
+  "alamat",
+  "wilayah_id",
+  "no_hp",
+  "tanggal_lahir",
+  "tanggal_masuk",
+  "sudah_baptis",
+  "sudah_sidi",
+] as const;
+
+function pickProfileFields(body: Record<string, unknown>) {
+  const update: JemaatUpdate = {};
+  for (const field of PROFILE_FIELDS) {
+    if (field in body) {
+      // @ts-expect-error - narrow whitelist of known Jemaat columns, value shape matches Update
+      update[field] = body[field];
+    }
+  }
+  return update;
+}
 
 /**
  * Updates a jemaat's name and/or their full set of labels. `label_ids`, when
@@ -25,8 +47,11 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
   const supabase = await createClient();
 
+  const update: JemaatUpdate = pickProfileFields(body);
   if ("nama" in body) {
-    const update: JemaatUpdate = { nama: body.nama };
+    update.nama = body.nama;
+  }
+  if (Object.keys(update).length > 0) {
     const { error } = await supabase.from("jemaat").update(update).eq("id", id);
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 400 });
@@ -52,7 +77,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
   const { data, error } = await supabase
     .from("jemaat")
-    .select(JEMAAT_SELECT_WITH_LABELS)
+    .select(JEMAAT_SELECT_FULL)
     .eq("id", id)
     .single();
 

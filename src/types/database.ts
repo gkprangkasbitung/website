@@ -413,18 +413,50 @@ export interface Database {
           id: string;
           nama: string;
           created_at: string;
+          jenis_kelamin: string | null;
+          alamat: string | null;
+          wilayah_id: string | null;
+          no_hp: string | null;
+          tanggal_lahir: string | null;
+          tanggal_masuk: string | null;
+          sudah_baptis: boolean;
+          sudah_sidi: boolean;
         };
         Insert: {
           id?: string;
           nama: string;
           created_at?: string;
+          jenis_kelamin?: string | null;
+          alamat?: string | null;
+          wilayah_id?: string | null;
+          no_hp?: string | null;
+          tanggal_lahir?: string | null;
+          tanggal_masuk?: string | null;
+          sudah_baptis?: boolean;
+          sudah_sidi?: boolean;
         };
         Update: {
           id?: string;
           nama?: string;
           created_at?: string;
+          jenis_kelamin?: string | null;
+          alamat?: string | null;
+          wilayah_id?: string | null;
+          no_hp?: string | null;
+          tanggal_lahir?: string | null;
+          tanggal_masuk?: string | null;
+          sudah_baptis?: boolean;
+          sudah_sidi?: boolean;
         };
-        Relationships: [];
+        Relationships: [
+          {
+            foreignKeyName: "jemaat_wilayah_id_fkey";
+            columns: ["wilayah_id"];
+            isOneToOne: false;
+            referencedRelation: "wilayah";
+            referencedColumns: ["id"];
+          },
+        ];
       };
       label_jemaat: {
         Row: {
