@@ -14,7 +14,7 @@ function isActive(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
-export function AdminNav({ items }: { items: AdminNavItem[] }) {
+export function AdminNav({ items, onNavigate }: { items: AdminNavItem[]; onNavigate?: () => void }) {
   const pathname = usePathname();
 
   return (
@@ -27,6 +27,7 @@ export function AdminNav({ items }: { items: AdminNavItem[] }) {
           <div key={item.href}>
             <Link
               href={item.href}
+              onClick={onNavigate}
               className={cn(
                 "block border-l-2 px-3 py-1.5 text-sm transition-colors",
                 active
@@ -44,6 +45,7 @@ export function AdminNav({ items }: { items: AdminNavItem[] }) {
                     <Link
                       key={child.href}
                       href={child.href}
+                      onClick={onNavigate}
                       className={cn(
                         "block border-l-2 px-2 py-1 text-sm transition-colors",
                         childIsActive

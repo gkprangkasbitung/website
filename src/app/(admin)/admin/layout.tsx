@@ -2,6 +2,7 @@ import { getAuthenticatedUser, hasPermission } from "@/lib/rbac/dal";
 import { logout } from "@/app/login/actions";
 import { createClient } from "@/lib/supabase/server";
 import { AdminNav } from "@/components/admin/admin-nav";
+import { AdminMobileNav } from "@/components/admin/admin-mobile-nav";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme-toggle";
 
@@ -58,8 +59,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   ].filter((item) => item.show);
 
   return (
-    <div className="admin-theme grid min-h-svh grid-cols-[240px_1fr] bg-background text-foreground">
-      <aside className="bg-sidebar p-4 text-sidebar-foreground">
+    <div className="admin-theme grid min-h-svh grid-cols-1 bg-background text-foreground md:grid-cols-[240px_1fr]">
+      <aside className="hidden bg-sidebar p-4 text-sidebar-foreground md:block">
         <div className="mb-6 flex items-center gap-2.5 px-2">
           <span className="grid size-8 shrink-0 place-items-center bg-sidebar-primary text-xs font-extrabold text-sidebar-primary-foreground">
             GKP
@@ -68,12 +69,16 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         </div>
         <AdminNav items={navItems} />
       </aside>
-      <div className="flex flex-col">
-        <header className="flex items-center justify-between border-b px-6 py-3">
-          <div className="text-sm text-muted-foreground">
-            {user.email} · {user.roles.map((r) => r.name).join(", ") || "tanpa role"}
+      <div className="flex min-w-0 flex-col">
+        <header className="flex flex-wrap items-center justify-between gap-2 border-b px-4 py-3 md:px-6">
+          <div className="flex min-w-0 items-center gap-2">
+            <AdminMobileNav items={navItems} />
+            <span className="text-sm font-extrabold md:hidden">GKP Rangkasbitung</span>
+            <span className="hidden truncate text-sm text-muted-foreground md:block">
+              {user.email} · {user.roles.map((r) => r.name).join(", ") || "tanpa role"}
+            </span>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex shrink-0 items-center gap-2">
             <ThemeToggle />
             <form action={logout}>
               <Button type="submit" variant="outline" size="sm">
@@ -82,7 +87,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             </form>
           </div>
         </header>
-        <main className="flex-1 p-6">{children}</main>
+        <main className="min-w-0 flex-1 p-4 md:p-6">{children}</main>
       </div>
     </div>
   );

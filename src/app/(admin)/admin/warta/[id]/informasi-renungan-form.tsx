@@ -34,7 +34,7 @@ export function InformasiRenunganForm({ warta, disabled }: { warta: Warta; disab
   }
 
   return (
-    <form action={onSubmit} className="grid grid-cols-2 gap-6">
+    <form action={onSubmit} className="grid grid-cols-1 gap-6 md:grid-cols-2">
       <div className="space-y-4">
         <h3 className="font-medium">Informasi</h3>
         <div className="space-y-2">

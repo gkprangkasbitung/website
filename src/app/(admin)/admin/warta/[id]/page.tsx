@@ -55,7 +55,7 @@ export default async function EditWartaPage({ params }: { params: Promise<{ id: 
 
   return (
     <div className="max-w-4xl space-y-8">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold">{warta.judul_kebaktian}</h1>
           <p className="text-muted-foreground">{warta.tanggal_kebaktian}</p>

@@ -10,7 +10,7 @@ export default async function AdminDashboardPage() {
         <h1 className="text-2xl font-semibold">Dashboard</h1>
         <p className="text-muted-foreground">Selamat datang, {user.profile?.full_name ?? user.email}.</p>
       </div>
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <Card>
           <CardHeader>
             <CardTitle className="text-sm text-muted-foreground">Role Anda</CardTitle>
