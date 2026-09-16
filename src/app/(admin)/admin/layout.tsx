@@ -65,8 +65,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   ].filter((item) => item.show);
 
   return (
-    <div className="admin-theme grid min-h-svh grid-cols-1 bg-background text-foreground md:grid-cols-[240px_1fr]">
-      <aside className="hidden flex-col bg-sidebar p-4 text-sidebar-foreground md:flex">
+    <div className="admin-theme grid h-svh grid-cols-1 overflow-hidden bg-background text-foreground md:grid-cols-[240px_1fr]">
+      <aside className="hidden h-full flex-col overflow-y-auto bg-sidebar p-4 text-sidebar-foreground md:flex">
         <div className="mb-6 flex items-center gap-2.5 px-2">
           <span className="grid size-8 shrink-0 place-items-center bg-sidebar-primary text-xs font-extrabold text-sidebar-primary-foreground">
             GKP
@@ -78,8 +78,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           <AccountMenu email={user.email} fullName={user.profile?.full_name ?? null} roleLabel={roleLabel} />
         </div>
       </aside>
-      <div className="flex min-w-0 flex-col">
-        <header className="flex flex-wrap items-center justify-between gap-2 border-b px-4 py-3 md:px-6">
+      <div className="flex h-full min-w-0 flex-col overflow-hidden">
+        <header className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b px-4 py-3 md:px-6">
           <div className="flex min-w-0 items-center gap-2">
             <AdminMobileNav items={navItems} email={user.email} fullName={user.profile?.full_name ?? null} roleLabel={roleLabel} />
             <span className="text-sm font-extrabold md:hidden">GKP Rangkasbitung</span>
@@ -88,7 +88,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             <ThemeToggle />
           </div>
         </header>
-        <main className="min-w-0 flex-1 p-4 md:p-6">{children}</main>
+        <main className="min-w-0 flex-1 overflow-y-auto p-4 md:p-6">{children}</main>
       </div>
     </div>
   );
