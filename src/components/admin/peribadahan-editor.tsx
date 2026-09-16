@@ -231,7 +231,7 @@ function TempatSelect({
   const items = Object.fromEntries(tempatList.map((t) => [t.id, t.nama]));
 
   return (
-    <Select value={value ?? undefined} onValueChange={onChange} items={items} disabled={disabled}>
+    <Select value={value ?? ""} onValueChange={(v) => onChange(v || null)} items={items} disabled={disabled}>
       <SelectTrigger className="w-full">
         <SelectValue placeholder="Tempat" />
       </SelectTrigger>
@@ -260,7 +260,7 @@ function WilayahSelect({
   const items = Object.fromEntries(wilayahList.map((w) => [w.id, w.nama]));
 
   return (
-    <Select value={value ?? undefined} onValueChange={onChange} items={items} disabled={disabled}>
+    <Select value={value ?? ""} onValueChange={(v) => onChange(v || null)} items={items} disabled={disabled}>
       <SelectTrigger className="w-full">
         <SelectValue placeholder="Wilayah" />
       </SelectTrigger>
@@ -810,7 +810,9 @@ function AddItemDialog({
 }
 
 /** Short summary of whichever of Tempat/Wilayah/Tema/DPA this item has, for
- * the compact table's Ringkasan column. */
+ * the compact table's Ringkasan column - used only on the all-categories
+ * overview page, where rows span different categories with different
+ * fields. */
 function summarize(item: PeribadahanItemWithRelations): string {
   const parts = [item.tempat?.nama, item.wilayah?.nama, item.tema, item.dpa].filter(
     (v): v is string => Boolean(v),
@@ -818,9 +820,40 @@ function summarize(item: PeribadahanItemWithRelations): string {
   return parts.length > 0 ? parts.join(" · ") : "-";
 }
 
+interface CategoryColumn {
+  label: string;
+  render: (item: PeribadahanItemWithRelations) => React.ReactNode;
+}
+
+/** Explicit columns for a single category's table (used when the editor is
+ * locked to one category, so every row shares the same fields) - order
+ * follows what's actually filled in for that category. */
+function getCategoryColumns(key: string | undefined, config: FieldConfig): CategoryColumn[] {
+  if (key === "smka") {
+    return [
+      { label: "Tema", render: (item) => item.tema ?? "-" },
+      { label: "Liturgos", render: (item) => item.liturgos?.nama ?? "-" },
+      { label: "Pemusik", render: (item) => item.pemusik?.nama ?? "-" },
+      { label: "Bahan Alkitab", render: (item) => item.bahan_alkitab ?? "-" },
+    ];
+  }
+
+  const columns: CategoryColumn[] = [];
+  if (config.tempat) columns.push({ label: "Tempat", render: (item) => item.tempat?.nama ?? "-" });
+  if (config.wilayah) columns.push({ label: "Wilayah", render: (item) => item.wilayah?.nama ?? "-" });
+  if (config.dpa) columns.push({ label: "DPA", render: (item) => item.dpa ?? "-" });
+  if (config.tema) columns.push({ label: "Tema", render: (item) => item.tema ?? "-" });
+  if (config.pelayanFirman) {
+    columns.push({ label: "Pelayan Firman", render: (item) => item.pelayan_firman?.nama ?? "-" });
+  }
+  if (config.liturgos) columns.push({ label: "Liturgos", render: (item) => item.liturgos?.nama ?? "-" });
+  return columns;
+}
+
 function ItemRow({
   item,
   showCategory,
+  categoryColumns,
   tempatList,
   wilayahList,
   jemaatList,
@@ -828,6 +861,9 @@ function ItemRow({
 }: {
   item: PeribadahanItemWithRelations;
   showCategory: boolean;
+  /** Set when the editor is locked to one category - replaces the generic
+   * Ringkasan column with explicit per-field columns. */
+  categoryColumns: CategoryColumn[] | null;
   tempatList: Tempat[];
   wilayahList: Wilayah[];
   jemaatList: JemaatWithLabels[];
@@ -846,7 +882,15 @@ function ItemRow({
       <TableCell className="whitespace-nowrap">{formatTanggalPanjang(item.tanggal)}</TableCell>
       <TableCell className="whitespace-nowrap">{item.jam ?? "-"}</TableCell>
       {showCategory && <TableCell>{item.category?.name ?? "-"}</TableCell>}
-      <TableCell className="max-w-64 truncate">{summarize(item)}</TableCell>
+      {categoryColumns ? (
+        categoryColumns.map((col) => (
+          <TableCell key={col.label} className="max-w-48 truncate">
+            {col.render(item)}
+          </TableCell>
+        ))
+      ) : (
+        <TableCell className="max-w-64 truncate">{summarize(item)}</TableCell>
+      )}
       <TableCell>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger render={<Button size="sm" variant="outline" />}>
@@ -913,6 +957,11 @@ export function PeribadahanEditor({
    * tanggal) every row already shares the same date. */
   const sortable = !tanggal;
 
+  const lockedCategory = lockedCategoryId ? categories.find((c) => c.id === lockedCategoryId) : undefined;
+  const lockedConfig = (lockedCategory?.key && FIELD_CONFIG[lockedCategory.key]) || FALLBACK_FIELD_CONFIG;
+  const categoryColumns = showCategory ? null : getCategoryColumns(lockedCategory?.key, lockedConfig);
+  const columnCount = 2 + (showCategory ? 1 : 0) + (categoryColumns?.length ?? 1) + 1;
+
   return (
     <div className="space-y-4">
       {!disabled && (
@@ -934,7 +983,11 @@ export function PeribadahanEditor({
               <TableHead>Waktu</TableHead>
             )}
             {showCategory && <TableHead>Jenis</TableHead>}
-            <TableHead>Ringkasan</TableHead>
+            {categoryColumns ? (
+              categoryColumns.map((col) => <TableHead key={col.label}>{col.label}</TableHead>)
+            ) : (
+              <TableHead>Ringkasan</TableHead>
+            )}
             <TableHead></TableHead>
           </TableRow>
         </TableHeader>
@@ -944,6 +997,7 @@ export function PeribadahanEditor({
               key={item.id}
               item={item}
               showCategory={showCategory}
+              categoryColumns={categoryColumns}
               tempatList={tempatList}
               wilayahList={wilayahList}
               jemaatList={jemaatList}
@@ -952,7 +1006,7 @@ export function PeribadahanEditor({
           ))}
           {items.length === 0 && (
             <TableRow>
-              <TableCell colSpan={showCategory ? 5 : 4} className="text-sm text-muted-foreground">
+              <TableCell colSpan={columnCount} className="text-sm text-muted-foreground">
                 Belum ada jadwal.
               </TableCell>
             </TableRow>

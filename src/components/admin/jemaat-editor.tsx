@@ -147,7 +147,7 @@ function JenisKelaminSelect({
 }) {
   return (
     <Select
-      value={value ?? undefined}
+      value={value ?? ""}
       onValueChange={(v) => v && onChange(v as JenisKelamin)}
       items={JENIS_KELAMIN_LABEL}
       disabled={disabled}
@@ -178,7 +178,7 @@ function WilayahSelect({
 
   return (
     <Select
-      value={value ?? undefined}
+      value={value ?? ""}
       onValueChange={(v) => v && onChange(v)}
       items={items}
       disabled={disabled}
