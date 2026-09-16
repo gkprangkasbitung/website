@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { logActivity } from "@/lib/activity-log";
 import { requirePermissionApi } from "@/lib/rbac/dal";
 import { createClient } from "@/lib/supabase/server";
 import type { Database } from "@/types/database";
@@ -37,6 +38,13 @@ export async function PATCH(
     return NextResponse.json({ error: error.message }, { status: 400 });
   }
 
+  await logActivity({
+    userId: auth.user.id,
+    userEmail: auth.user.email,
+    module: "warta",
+    activity: `Mengubah Kesaksian "${data.judul}" pada warta`,
+  });
+
   return NextResponse.json({ data });
 }
 
@@ -51,6 +59,12 @@ export async function DELETE(
 
   const { id: wartaId, itemId } = await params;
   const supabase = await createClient();
+  const { data: existing } = await supabase
+    .from("warta_kesaksian_items")
+    .select("judul")
+    .eq("id", itemId)
+    .eq("warta_id", wartaId)
+    .maybeSingle();
   const { error } = await supabase
     .from("warta_kesaksian_items")
     .delete()
@@ -60,6 +74,13 @@ export async function DELETE(
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 400 });
   }
+
+  await logActivity({
+    userId: auth.user.id,
+    userEmail: auth.user.email,
+    module: "warta",
+    activity: `Menghapus Kesaksian "${existing?.judul ?? itemId}" pada warta`,
+  });
 
   return NextResponse.json({ ok: true });
 }

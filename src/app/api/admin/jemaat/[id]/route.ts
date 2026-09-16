@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { logActivity } from "@/lib/activity-log";
 import { requirePermissionApi } from "@/lib/rbac/dal";
 import { createClient } from "@/lib/supabase/server";
 import { JEMAAT_SELECT_FULL, flattenJemaatLabels } from "@/lib/jemaat";
@@ -85,6 +86,13 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     return NextResponse.json({ error: error.message }, { status: 400 });
   }
 
+  await logActivity({
+    userId: auth.user.id,
+    userEmail: auth.user.email,
+    module: "jemaat",
+    activity: `Mengubah jemaat "${data.nama}"`,
+  });
+
   return NextResponse.json({ data: flattenJemaatLabels([data])[0] });
 }
 
@@ -96,11 +104,19 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
 
   const { id } = await params;
   const supabase = await createClient();
+  const { data: existing } = await supabase.from("jemaat").select("nama").eq("id", id).maybeSingle();
   const { error } = await supabase.from("jemaat").delete().eq("id", id);
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 400 });
   }
+
+  await logActivity({
+    userId: auth.user.id,
+    userEmail: auth.user.email,
+    module: "jemaat",
+    activity: `Menghapus jemaat "${existing?.nama ?? id}"`,
+  });
 
   return NextResponse.json({ ok: true });
 }

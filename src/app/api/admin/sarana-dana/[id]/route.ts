@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { logActivity } from "@/lib/activity-log";
 import { requirePermissionApi } from "@/lib/rbac/dal";
 import { createClient } from "@/lib/supabase/server";
 import type { Database } from "@/types/database";
@@ -42,6 +43,13 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 400 });
   }
+
+  await logActivity({
+    userId: auth.user.id,
+    userEmail: auth.user.email,
+    module: "sarana_dana",
+    activity: `Mengubah data "${data.name}"`,
+  });
 
   return NextResponse.json({ data });
 }

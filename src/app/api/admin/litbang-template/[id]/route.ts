@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { logActivity } from "@/lib/activity-log";
 import { requirePermissionApi } from "@/lib/rbac/dal";
 import { createClient } from "@/lib/supabase/server";
 import type { Database } from "@/types/database";
@@ -41,6 +42,13 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     return NextResponse.json({ error: error.message }, { status: 400 });
   }
 
+  await logActivity({
+    userId: auth.user.id,
+    userEmail: auth.user.email,
+    module: "litbang",
+    activity: `Mengubah kartu Litbang "${data.name}"`,
+  });
+
   return NextResponse.json({ data });
 }
 
@@ -52,11 +60,23 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
 
   const { id } = await params;
   const supabase = await createClient();
+  const { data: existing } = await supabase
+    .from("litbang_categories")
+    .select("name")
+    .eq("id", id)
+    .maybeSingle();
   const { error } = await supabase.from("litbang_categories").delete().eq("id", id);
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 400 });
   }
+
+  await logActivity({
+    userId: auth.user.id,
+    userEmail: auth.user.email,
+    module: "litbang",
+    activity: `Menghapus kartu Litbang "${existing?.name ?? id}"`,
+  });
 
   return NextResponse.json({ ok: true });
 }

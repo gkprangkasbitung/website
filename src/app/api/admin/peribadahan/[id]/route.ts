@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { logActivity } from "@/lib/activity-log";
 import { PERIBADAHAN_ITEM_SELECT } from "@/lib/peribadahan";
 import { requirePermissionApi } from "@/lib/rbac/dal";
 import { createClient } from "@/lib/supabase/server";
@@ -85,6 +86,13 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     return NextResponse.json({ error: fetchError.message }, { status: 400 });
   }
 
+  await logActivity({
+    userId: auth.user.id,
+    userEmail: auth.user.email,
+    module: "peribadahan",
+    activity: `Mengubah jadwal ${data.category?.name ?? "Peribadahan"} tanggal ${data.tanggal}`,
+  });
+
   return NextResponse.json({ data });
 }
 
@@ -96,11 +104,23 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
 
   const { id } = await params;
   const supabase = await createClient();
+  const { data: existing } = await supabase
+    .from("peribadahan_items")
+    .select(PERIBADAHAN_ITEM_SELECT)
+    .eq("id", id)
+    .maybeSingle();
   const { error } = await supabase.from("peribadahan_items").delete().eq("id", id);
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 400 });
   }
+
+  await logActivity({
+    userId: auth.user.id,
+    userEmail: auth.user.email,
+    module: "peribadahan",
+    activity: `Menghapus jadwal ${existing?.category?.name ?? "Peribadahan"} tanggal ${existing?.tanggal ?? id}`,
+  });
 
   return NextResponse.json({ ok: true });
 }

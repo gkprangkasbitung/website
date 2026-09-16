@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { logActivity } from "@/lib/activity-log";
 import { requirePermissionApi } from "@/lib/rbac/dal";
 import { createClient } from "@/lib/supabase/server";
 import type { Database } from "@/types/database";
@@ -32,6 +33,13 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     return NextResponse.json({ error: error.message }, { status: 400 });
   }
 
+  await logActivity({
+    userId: auth.user.id,
+    userEmail: auth.user.email,
+    module: "wilayah",
+    activity: `Mengubah wilayah "${data.nama}"`,
+  });
+
   return NextResponse.json({ data });
 }
 
@@ -43,11 +51,19 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
 
   const { id } = await params;
   const supabase = await createClient();
+  const { data: existing } = await supabase.from("wilayah").select("nama").eq("id", id).maybeSingle();
   const { error } = await supabase.from("wilayah").delete().eq("id", id);
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 400 });
   }
+
+  await logActivity({
+    userId: auth.user.id,
+    userEmail: auth.user.email,
+    module: "wilayah",
+    activity: `Menghapus wilayah "${existing?.nama ?? id}"`,
+  });
 
   return NextResponse.json({ ok: true });
 }

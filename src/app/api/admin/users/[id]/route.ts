@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
+import { logActivity } from "@/lib/activity-log";
 import { requirePermissionApi } from "@/lib/rbac/dal";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
 
 /**
  * Deletes an auth user outright. profiles/user_roles rows cascade via their
@@ -28,10 +30,24 @@ export async function DELETE(
     return NextResponse.json({ error: (err as Error).message }, { status: 500 });
   }
 
+  const supabase = await createClient();
+  const { data: existing } = await supabase
+    .from("profiles")
+    .select("email")
+    .eq("id", userId)
+    .maybeSingle();
+
   const { error } = await admin.auth.admin.deleteUser(userId);
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 400 });
   }
+
+  await logActivity({
+    userId: auth.user.id,
+    userEmail: auth.user.email,
+    module: "users",
+    activity: `Menghapus pengguna "${existing?.email ?? userId}"`,
+  });
 
   return NextResponse.json({ ok: true });
 }

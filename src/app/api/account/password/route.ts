@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { logActivity } from "@/lib/activity-log";
 import { createClient } from "@/lib/supabase/server";
 
 /** Self-service password change - any signed-in user may change their own password. */
@@ -28,6 +29,13 @@ export async function POST(request: Request) {
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 400 });
   }
+
+  await logActivity({
+    userId: user.id,
+    userEmail: user.email ?? null,
+    module: "akun",
+    activity: "Mengganti password",
+  });
 
   return NextResponse.json({ ok: true });
 }

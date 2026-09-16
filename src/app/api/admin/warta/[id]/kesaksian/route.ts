@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { logActivity } from "@/lib/activity-log";
 import { requirePermissionApi } from "@/lib/rbac/dal";
 import { createClient } from "@/lib/supabase/server";
 
@@ -37,6 +38,13 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 400 });
   }
+
+  await logActivity({
+    userId: auth.user.id,
+    userEmail: auth.user.email,
+    module: "warta",
+    activity: `Menambah Kesaksian "${data.judul}" pada warta`,
+  });
 
   return NextResponse.json({ data }, { status: 201 });
 }

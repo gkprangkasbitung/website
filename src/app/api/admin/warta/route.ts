@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { logActivity } from "@/lib/activity-log";
 import { requirePermissionApi } from "@/lib/rbac/dal";
 import { createClient } from "@/lib/supabase/server";
 import { slugify } from "@/lib/slugify";
@@ -100,6 +101,13 @@ export async function POST(request: Request) {
       );
     }
   }
+
+  await logActivity({
+    userId: auth.user.id,
+    userEmail: auth.user.email,
+    module: "warta",
+    activity: `Membuat warta "${warta.judul_kebaktian}" (${warta.tanggal_kebaktian})`,
+  });
 
   return NextResponse.json({ data: warta }, { status: 201 });
 }

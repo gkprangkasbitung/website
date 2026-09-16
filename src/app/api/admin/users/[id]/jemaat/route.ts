@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { logActivity } from "@/lib/activity-log";
 import { requirePermissionApi } from "@/lib/rbac/dal";
 import { createClient } from "@/lib/supabase/server";
 
@@ -36,6 +37,13 @@ export async function PATCH(
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 400 });
   }
+
+  await logActivity({
+    userId: auth.user.id,
+    userEmail: auth.user.email,
+    module: "users",
+    activity: jemaatId ? "Menghubungkan pengguna dengan data jemaat" : "Melepas hubungan pengguna dengan data jemaat",
+  });
 
   return NextResponse.json({ ok: true });
 }

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { logActivity } from "@/lib/activity-log";
 import { requirePermissionApi } from "@/lib/rbac/dal";
 import { createClient } from "@/lib/supabase/server";
 
@@ -30,6 +31,13 @@ export async function PATCH(
     return NextResponse.json({ error: error.message }, { status: 400 });
   }
 
+  await logActivity({
+    userId: auth.user.id,
+    userEmail: auth.user.email,
+    module: "roles",
+    activity: `Mengubah role "${data.name}"`,
+  });
+
   return NextResponse.json({ data });
 }
 
@@ -44,11 +52,19 @@ export async function DELETE(
 
   const { id } = await params;
   const supabase = await createClient();
+  const { data: existing } = await supabase.from("roles").select("name").eq("id", id).maybeSingle();
   const { error } = await supabase.from("roles").delete().eq("id", id);
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 400 });
   }
+
+  await logActivity({
+    userId: auth.user.id,
+    userEmail: auth.user.email,
+    module: "roles",
+    activity: `Menghapus role "${existing?.name ?? id}"`,
+  });
 
   return NextResponse.json({ ok: true });
 }

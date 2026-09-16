@@ -700,6 +700,36 @@ export interface Database {
           },
         ];
       };
+      activity_logs: {
+        Row: {
+          id: string;
+          user_id: string | null;
+          user_email: string | null;
+          module: string;
+          activity: string;
+          ip_address: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id?: string | null;
+          user_email?: string | null;
+          module: string;
+          activity: string;
+          ip_address?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string | null;
+          user_email?: string | null;
+          module?: string;
+          activity?: string;
+          ip_address?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;

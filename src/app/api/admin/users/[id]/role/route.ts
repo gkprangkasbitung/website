@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { logActivity } from "@/lib/activity-log";
 import { requirePermissionApi } from "@/lib/rbac/dal";
 import { createClient } from "@/lib/supabase/server";
 
@@ -42,6 +43,15 @@ export async function PATCH(
   if (insertError) {
     return NextResponse.json({ error: insertError.message }, { status: 400 });
   }
+
+  const { data: role } = await supabase.from("roles").select("name").eq("id", roleId).maybeSingle();
+
+  await logActivity({
+    userId: auth.user.id,
+    userEmail: auth.user.email,
+    module: "users",
+    activity: `Mengubah role pengguna menjadi "${role?.name ?? roleId}"`,
+  });
 
   return NextResponse.json({ ok: true });
 }

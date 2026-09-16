@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { logActivity } from "@/lib/activity-log";
 import { createClient } from "@/lib/supabase/server";
 
 export interface LoginState {
@@ -19,11 +20,18 @@ export async function login(
   }
 
   const supabase = await createClient();
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
   if (error) {
     return { error: "Email atau password salah." };
   }
+
+  await logActivity({
+    userId: data.user.id,
+    userEmail: data.user.email ?? null,
+    module: "auth",
+    activity: "Login",
+  });
 
   const next = formData.get("next");
   redirect(typeof next === "string" && next.startsWith("/admin") ? next : "/admin");
@@ -31,6 +39,19 @@ export async function login(
 
 export async function logout() {
   const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (user) {
+    await logActivity({
+      userId: user.id,
+      userEmail: user.email ?? null,
+      module: "auth",
+      activity: "Logout",
+    });
+  }
+
   await supabase.auth.signOut();
   redirect("/login");
 }

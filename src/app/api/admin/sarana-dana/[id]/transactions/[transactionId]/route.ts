@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
+import { logActivity } from "@/lib/activity-log";
 import { requirePermissionApi } from "@/lib/rbac/dal";
 import { createClient } from "@/lib/supabase/server";
+import { formatRupiah } from "@/lib/format";
 import type { Database } from "@/types/database";
 
 type SaranaDanaTransactionUpdate = Database["public"]["Tables"]["sarana_dana_transactions"]["Update"];
@@ -50,6 +52,13 @@ export async function PATCH(
     return NextResponse.json({ error: error.message }, { status: 400 });
   }
 
+  await logActivity({
+    userId: auth.user.id,
+    userEmail: auth.user.email,
+    module: "sarana_dana",
+    activity: `Mengubah transaksi ${data.tipe === "masuk" ? "pemasukan" : "pengeluaran"} ${formatRupiah(data.jumlah)}`,
+  });
+
   return NextResponse.json({ data });
 }
 
@@ -64,6 +73,12 @@ export async function DELETE(
 
   const { id: itemId, transactionId } = await params;
   const supabase = await createClient();
+  const { data: existing } = await supabase
+    .from("sarana_dana_transactions")
+    .select("tipe, jumlah")
+    .eq("id", transactionId)
+    .eq("item_id", itemId)
+    .maybeSingle();
   const { error } = await supabase
     .from("sarana_dana_transactions")
     .delete()
@@ -73,6 +88,15 @@ export async function DELETE(
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 400 });
   }
+
+  await logActivity({
+    userId: auth.user.id,
+    userEmail: auth.user.email,
+    module: "sarana_dana",
+    activity: existing
+      ? `Menghapus transaksi ${existing.tipe === "masuk" ? "pemasukan" : "pengeluaran"} ${formatRupiah(existing.jumlah)}`
+      : "Menghapus transaksi",
+  });
 
   return NextResponse.json({ ok: true });
 }

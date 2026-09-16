@@ -1,7 +1,13 @@
 export type PermissionAction = "create" | "read" | "update" | "delete";
 
 /** Add new resource names here as the admin app grows. */
-export type PermissionResource = "users" | "roles" | "announcements" | "content" | "warta";
+export type PermissionResource =
+  | "users"
+  | "roles"
+  | "announcements"
+  | "content"
+  | "warta"
+  | "activity_log";
 
 export interface Permission {
   id: string;

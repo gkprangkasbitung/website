@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { logActivity } from "@/lib/activity-log";
 import { requirePermissionApi } from "@/lib/rbac/dal";
 import { createClient } from "@/lib/supabase/server";
 import { JEMAAT_SELECT_WITH_LABELS, flattenJemaatLabels } from "@/lib/jemaat";
@@ -84,6 +85,13 @@ export async function POST(request: Request) {
       );
     }
   }
+
+  await logActivity({
+    userId: auth.user.id,
+    userEmail: auth.user.email,
+    module: "jemaat",
+    activity: `Menambah jemaat "${jemaat.nama}"`,
+  });
 
   return NextResponse.json({ data: jemaat }, { status: 201 });
 }

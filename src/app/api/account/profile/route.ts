@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { logActivity } from "@/lib/activity-log";
 import { createClient } from "@/lib/supabase/server";
 
 /** Self-service profile update - any signed-in user may edit their own name. */
@@ -27,6 +28,13 @@ export async function PATCH(request: Request) {
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 400 });
   }
+
+  await logActivity({
+    userId: user.id,
+    userEmail: user.email ?? null,
+    module: "akun",
+    activity: "Mengubah nama profil",
+  });
 
   return NextResponse.json({ ok: true });
 }

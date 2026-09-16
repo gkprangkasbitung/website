@@ -56,6 +56,12 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       show: hasPermission(user, "roles", "read"),
       children: [],
     },
+    {
+      href: "/admin/log-aktivitas",
+      label: "Log Aktivitas",
+      show: hasPermission(user, "activity_log", "read"),
+      children: [],
+    },
   ].filter((item) => item.show);
 
   return (

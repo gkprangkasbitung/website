@@ -19,3 +19,14 @@ const TANGGAL_PANJANG_FORMATTER = new Intl.DateTimeFormat("id-ID", {
 export function formatTanggalPanjang(tanggal: string): string {
   return TANGGAL_PANJANG_FORMATTER.format(new Date(`${tanggal}T00:00:00Z`));
 }
+
+const WAKTU_FORMATTER = new Intl.DateTimeFormat("id-ID", {
+  dateStyle: "medium",
+  timeStyle: "short",
+  timeZone: "Asia/Jakarta",
+});
+
+/** Formats an ISO timestamp as e.g. "14 Sep 2025, 09.30" in WIB. */
+export function formatWaktu(iso: string): string {
+  return `${WAKTU_FORMATTER.format(new Date(iso))} WIB`;
+}

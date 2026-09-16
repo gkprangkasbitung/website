@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { logActivity } from "@/lib/activity-log";
 import { requirePermissionApi } from "@/lib/rbac/dal";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -71,6 +72,13 @@ export async function POST(request: Request) {
       );
     }
   }
+
+  await logActivity({
+    userId: auth.user.id,
+    userEmail: auth.user.email,
+    module: "users",
+    activity: `Mengundang pengguna "${email}"`,
+  });
 
   return NextResponse.json({ data: { id: userId, email: invited.user.email } }, { status: 201 });
 }
