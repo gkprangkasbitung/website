@@ -1,15 +1,15 @@
 import { getAuthenticatedUser, hasPermission } from "@/lib/rbac/dal";
-import { logout } from "@/app/login/actions";
 import { createClient } from "@/lib/supabase/server";
+import { AccountMenu } from "@/components/admin/account-menu";
 import { AdminNav } from "@/components/admin/admin-nav";
 import { AdminMobileNav } from "@/components/admin/admin-mobile-nav";
-import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme-toggle";
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const user = await getAuthenticatedUser();
 
   const canReadWarta = hasPermission(user, "warta", "read");
+  const roleLabel = user.roles.map((r) => r.name).join(", ") || "Tanpa role";
 
   let peribadahanCategories: { key: string; name: string }[] = [];
   let saranaDanaItems: { key: string; name: string }[] = [];
@@ -60,7 +60,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   return (
     <div className="admin-theme grid min-h-svh grid-cols-1 bg-background text-foreground md:grid-cols-[240px_1fr]">
-      <aside className="hidden bg-sidebar p-4 text-sidebar-foreground md:block">
+      <aside className="hidden flex-col bg-sidebar p-4 text-sidebar-foreground md:flex">
         <div className="mb-6 flex items-center gap-2.5 px-2">
           <span className="grid size-8 shrink-0 place-items-center bg-sidebar-primary text-xs font-extrabold text-sidebar-primary-foreground">
             GKP
@@ -68,23 +68,18 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           <span className="text-sm leading-tight font-extrabold">GKP Rangkasbitung</span>
         </div>
         <AdminNav items={navItems} />
+        <div className="mt-auto border-t border-sidebar-border pt-3">
+          <AccountMenu email={user.email} fullName={user.profile?.full_name ?? null} roleLabel={roleLabel} />
+        </div>
       </aside>
       <div className="flex min-w-0 flex-col">
         <header className="flex flex-wrap items-center justify-between gap-2 border-b px-4 py-3 md:px-6">
           <div className="flex min-w-0 items-center gap-2">
-            <AdminMobileNav items={navItems} />
+            <AdminMobileNav items={navItems} email={user.email} fullName={user.profile?.full_name ?? null} roleLabel={roleLabel} />
             <span className="text-sm font-extrabold md:hidden">GKP Rangkasbitung</span>
-            <span className="hidden truncate text-sm text-muted-foreground md:block">
-              {user.email} · {user.roles.map((r) => r.name).join(", ") || "tanpa role"}
-            </span>
           </div>
           <div className="flex shrink-0 items-center gap-2">
             <ThemeToggle />
-            <form action={logout}>
-              <Button type="submit" variant="outline" size="sm">
-                Keluar
-              </Button>
-            </form>
           </div>
         </header>
         <main className="min-w-0 flex-1 p-4 md:p-6">{children}</main>

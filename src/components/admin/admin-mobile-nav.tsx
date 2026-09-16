@@ -2,11 +2,22 @@
 
 import { useState } from "react";
 import { MenuIcon } from "lucide-react";
+import { AccountMenu } from "@/components/admin/account-menu";
 import { AdminNav, type AdminNavItem } from "@/components/admin/admin-nav";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 
-export function AdminMobileNav({ items }: { items: AdminNavItem[] }) {
+export function AdminMobileNav({
+  items,
+  email,
+  fullName,
+  roleLabel,
+}: {
+  items: AdminNavItem[];
+  email: string | null;
+  fullName: string | null;
+  roleLabel: string;
+}) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -26,6 +37,14 @@ export function AdminMobileNav({ items }: { items: AdminNavItem[] }) {
         </SheetHeader>
         <div className="flex-1 overflow-y-auto p-4">
           <AdminNav items={items} onNavigate={() => setOpen(false)} />
+        </div>
+        <div className="border-t border-sidebar-border p-4">
+          <AccountMenu
+            email={email}
+            fullName={fullName}
+            roleLabel={roleLabel}
+            onNavigate={() => setOpen(false)}
+          />
         </div>
       </SheetContent>
     </Sheet>
