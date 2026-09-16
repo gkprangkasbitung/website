@@ -544,6 +544,7 @@ export interface Database {
           tipe: "masuk" | "keluar";
           jumlah: number;
           keterangan: string | null;
+          jemaat_id: string | null;
           created_by: string | null;
           created_at: string;
         };
@@ -554,6 +555,7 @@ export interface Database {
           tipe: "masuk" | "keluar";
           jumlah: number;
           keterangan?: string | null;
+          jemaat_id?: string | null;
           created_by?: string | null;
           created_at?: string;
         };
@@ -564,6 +566,7 @@ export interface Database {
           tipe?: "masuk" | "keluar";
           jumlah?: number;
           keterangan?: string | null;
+          jemaat_id?: string | null;
           created_by?: string | null;
           created_at?: string;
         };
@@ -573,6 +576,13 @@ export interface Database {
             columns: ["item_id"];
             isOneToOne: false;
             referencedRelation: "sarana_dana_items";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "sarana_dana_transactions_jemaat_id_fkey";
+            columns: ["jemaat_id"];
+            isOneToOne: false;
+            referencedRelation: "jemaat";
             referencedColumns: ["id"];
           },
         ];

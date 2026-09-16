@@ -3,6 +3,7 @@ import { PaginationBar } from "@/components/admin/pagination-bar";
 import { SaranaDanaLedger } from "@/components/admin/sarana-dana-ledger";
 import { TableDateRangeFilter } from "@/components/admin/table-date-range-filter";
 import { TableSearchInput } from "@/components/admin/table-search-input";
+import { flattenJemaatLabels, JEMAAT_SELECT_WITH_LABELS } from "@/lib/jemaat";
 import { formatRupiah } from "@/lib/format";
 import { parsePageSize } from "@/lib/pagination";
 import { getAuthenticatedUser, hasPermission, requirePermission } from "@/lib/rbac/dal";
@@ -53,19 +54,20 @@ export default async function SaranaDanaLedgerPage({
 
   let transactionsQuery = supabase
     .from("sarana_dana_transactions")
-    .select("*", { count: "exact" })
+    .select("*, jemaat(id, nama)", { count: "exact" })
     .eq("item_id", item.id);
 
   if (q) transactionsQuery = transactionsQuery.ilike("keterangan", `%${q}%`);
   if (from) transactionsQuery = transactionsQuery.gte("tanggal", from);
   if (to) transactionsQuery = transactionsQuery.lte("tanggal", to);
 
-  const [{ data: balance }, { data: transactions, count }] = await Promise.all([
+  const [{ data: balance }, { data: transactions, count }, { data: jemaatList }] = await Promise.all([
     supabase.from("sarana_dana_balances").select("*").eq("id", item.id).single(),
     transactionsQuery
       .order(sortKey, { ascending: sortDir === "asc" })
       .order("created_at", { ascending: false })
       .range(rangeFrom, rangeTo),
+    supabase.from("jemaat").select(JEMAAT_SELECT_WITH_LABELS).order("nama"),
   ]);
 
   return (
@@ -90,7 +92,13 @@ export default async function SaranaDanaLedgerPage({
         <TableDateRangeFilter />
       </div>
 
-      <SaranaDanaLedger itemId={item.id} transactions={transactions ?? []} disabled={!canEdit} />
+      <SaranaDanaLedger
+        itemId={item.id}
+        itemKey={item.key}
+        transactions={transactions ?? []}
+        jemaatList={flattenJemaatLabels(jemaatList ?? [])}
+        disabled={!canEdit}
+      />
 
       <PaginationBar page={page} pageSize={pageSize} totalItems={count ?? 0} entryLabel="transaksi" />
     </div>

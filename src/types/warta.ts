@@ -172,8 +172,15 @@ export interface SaranaDanaTransaction {
   tipe: SaranaDanaTransactionType;
   jumlah: number;
   keterangan: string | null;
+  /** Only ever set for the Persembahan Bulanan item - optionally relates an
+   * offering entry to the jemaat who gave it. */
+  jemaat_id: string | null;
   created_by: string | null;
   created_at: string;
+}
+
+export interface SaranaDanaTransactionWithJemaat extends SaranaDanaTransaction {
+  jemaat: Pick<Jemaat, "id" | "nama"> | null;
 }
 
 /** Computed saldo_awal + sum(masuk) - sum(keluar), from the sarana_dana_balances view. */

@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
+import { JemaatSelect } from "@/components/admin/jemaat-select";
 import { SortableTableHead } from "@/components/admin/sortable-table-head";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -31,8 +32,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { formatRupiah } from "@/lib/format";
-import type { SaranaDanaTransaction, SaranaDanaTransactionType } from "@/types/warta";
+import { formatRupiah, formatThousands, parseThousands } from "@/lib/format";
+import type { JemaatWithLabels, SaranaDanaTransactionType, SaranaDanaTransactionWithJemaat } from "@/types/warta";
+
+const PERSEMBAHAN_KEY = "persembahan_bulanan";
 
 function TransactionRow({
   itemId,
@@ -40,7 +43,7 @@ function TransactionRow({
   disabled,
 }: {
   itemId: string;
-  transaction: SaranaDanaTransaction;
+  transaction: SaranaDanaTransactionWithJemaat;
   disabled?: boolean;
 }) {
   const router = useRouter();
@@ -75,6 +78,7 @@ function TransactionRow({
         {transaction.tipe === "masuk" ? "+" : "-"}
         {formatRupiah(transaction.jumlah)}
       </TableCell>
+      <TableCell>{transaction.jemaat?.nama ?? "-"}</TableCell>
       <TableCell>{transaction.keterangan ?? "-"}</TableCell>
       <TableCell>
         {!disabled && (
@@ -87,17 +91,27 @@ function TransactionRow({
   );
 }
 
-function AddTransactionDialog({ itemId }: { itemId: string }) {
+function AddTransactionDialog({
+  itemId,
+  itemKey,
+  jemaatList,
+}: {
+  itemId: string;
+  itemKey: string;
+  jemaatList: JemaatWithLabels[];
+}) {
   const router = useRouter();
+  const isPersembahan = itemKey === PERSEMBAHAN_KEY;
   const [open, setOpen] = useState(false);
   const [tanggal, setTanggal] = useState(() => new Date().toISOString().slice(0, 10));
   const [tipe, setTipe] = useState<SaranaDanaTransactionType>("masuk");
   const [jumlah, setJumlah] = useState("");
   const [keterangan, setKeterangan] = useState("");
+  const [jemaatId, setJemaatId] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
   function onSubmit() {
-    if (!jumlah || Number(jumlah) < 0) {
+    if (!jumlah) {
       toast.error("Jumlah wajib diisi");
       return;
     }
@@ -106,7 +120,13 @@ function AddTransactionDialog({ itemId }: { itemId: string }) {
       const res = await fetch(`/api/admin/sarana-dana/${itemId}/transactions`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tanggal, tipe, jumlah, keterangan }),
+        body: JSON.stringify({
+          tanggal,
+          tipe: isPersembahan ? "masuk" : tipe,
+          jumlah,
+          keterangan,
+          jemaat_id: isPersembahan ? jemaatId : null,
+        }),
       });
 
       if (!res.ok) {
@@ -119,6 +139,7 @@ function AddTransactionDialog({ itemId }: { itemId: string }) {
       setOpen(false);
       setJumlah("");
       setKeterangan("");
+      setJemaatId(null);
       router.refresh();
     });
   }
@@ -141,30 +162,49 @@ function AddTransactionDialog({ itemId }: { itemId: string }) {
               disabled={isPending}
             />
           </div>
-          <div className="space-y-2">
-            <Label>Tipe</Label>
-            <Select
-              value={tipe}
-              onValueChange={(v) => v && setTipe(v as SaranaDanaTransactionType)}
-              items={{ masuk: "Pemasukan", keluar: "Pengeluaran" }}
-              disabled={isPending}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="masuk">Pemasukan</SelectItem>
-                <SelectItem value="keluar">Pengeluaran</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          {isPersembahan ? (
+            <div className="space-y-2">
+              <Label>Tipe</Label>
+              <p className="text-sm text-muted-foreground">Pemasukan (tetap)</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <Label>Tipe</Label>
+              <Select
+                value={tipe}
+                onValueChange={(v) => v && setTipe(v as SaranaDanaTransactionType)}
+                items={{ masuk: "Pemasukan", keluar: "Pengeluaran" }}
+                disabled={isPending}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="masuk">Pemasukan</SelectItem>
+                  <SelectItem value="keluar">Pengeluaran</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+          {isPersembahan && (
+            <div className="space-y-2">
+              <Label>Jemaat (opsional)</Label>
+              <JemaatSelect
+                value={jemaatId}
+                onChange={setJemaatId}
+                jemaatList={jemaatList}
+                placeholder="Pilih jemaat (opsional)"
+                disabled={isPending}
+              />
+            </div>
+          )}
           <div className="space-y-2">
             <Label htmlFor="jumlah">Jumlah</Label>
             <Input
               id="jumlah"
-              type="number"
-              value={jumlah}
-              onChange={(e) => setJumlah(e.target.value)}
+              inputMode="numeric"
+              value={formatThousands(jumlah)}
+              onChange={(e) => setJumlah(parseThousands(e.target.value))}
               disabled={isPending}
               placeholder="0"
             />
@@ -192,18 +232,22 @@ function AddTransactionDialog({ itemId }: { itemId: string }) {
 
 export function SaranaDanaLedger({
   itemId,
+  itemKey,
   transactions,
+  jemaatList,
   disabled,
 }: {
   itemId: string;
-  transactions: SaranaDanaTransaction[];
+  itemKey: string;
+  transactions: SaranaDanaTransactionWithJemaat[];
+  jemaatList: JemaatWithLabels[];
   disabled?: boolean;
 }) {
   return (
     <div className="space-y-4">
       {!disabled && (
         <div className="flex justify-end">
-          <AddTransactionDialog itemId={itemId} />
+          <AddTransactionDialog itemId={itemId} itemKey={itemKey} jemaatList={jemaatList} />
         </div>
       )}
       <Table>
@@ -212,6 +256,7 @@ export function SaranaDanaLedger({
             <SortableTableHead sortKey="tanggal">Tanggal</SortableTableHead>
             <SortableTableHead sortKey="tipe">Tipe</SortableTableHead>
             <SortableTableHead sortKey="jumlah">Jumlah</SortableTableHead>
+            <TableHead>Jemaat</TableHead>
             <SortableTableHead sortKey="keterangan">Keterangan</SortableTableHead>
             <TableHead></TableHead>
           </TableRow>
@@ -222,7 +267,7 @@ export function SaranaDanaLedger({
           ))}
           {transactions.length === 0 && (
             <TableRow>
-              <TableCell colSpan={5} className="text-sm text-muted-foreground">
+              <TableCell colSpan={6} className="text-sm text-muted-foreground">
                 Belum ada transaksi.
               </TableCell>
             </TableRow>
