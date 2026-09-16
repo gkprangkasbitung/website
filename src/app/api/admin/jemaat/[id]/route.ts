@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { logActivity } from "@/lib/activity-log";
 import { requirePermissionApi } from "@/lib/rbac/dal";
 import { createClient } from "@/lib/supabase/server";
-import { JEMAAT_SELECT_FULL, flattenJemaatLabels } from "@/lib/jemaat";
+import { JEMAAT_SELECT_FULL, findOrCreateKeluarga, flattenJemaatLabels } from "@/lib/jemaat";
 import type { Database } from "@/types/database";
 
 type JemaatUpdate = Database["public"]["Tables"]["jemaat"]["Update"];
@@ -14,8 +14,10 @@ const PROFILE_FIELDS = [
   "no_hp",
   "tanggal_lahir",
   "tanggal_masuk",
-  "sudah_baptis",
-  "sudah_sidi",
+  "hubungan_keluarga",
+  "status_keanggotaan",
+  "pekerjaan",
+  "nomor_anggota",
 ] as const;
 
 function pickProfileFields(body: Record<string, unknown>) {
@@ -51,6 +53,18 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   const update: JemaatUpdate = pickProfileFields(body);
   if ("nama" in body) {
     update.nama = body.nama;
+  }
+  if ("keluarga_nama" in body) {
+    const keluargaNama = body.keluarga_nama;
+    if (typeof keluargaNama === "string" && keluargaNama.trim()) {
+      const keluarga = await findOrCreateKeluarga(supabase, keluargaNama);
+      if ("error" in keluarga) {
+        return NextResponse.json({ error: keluarga.error }, { status: 400 });
+      }
+      update.keluarga_id = keluarga.id;
+    } else {
+      update.keluarga_id = null;
+    }
   }
   if (Object.keys(update).length > 0) {
     const { error } = await supabase.from("jemaat").update(update).eq("id", id);

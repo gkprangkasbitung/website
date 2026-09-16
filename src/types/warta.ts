@@ -56,6 +56,27 @@ export interface JemaatWithLabels extends Jemaat {
 
 export type JenisKelamin = "laki_laki" | "perempuan";
 
+export interface Keluarga {
+  id: string;
+  nama: string;
+}
+
+export const STATUS_KEANGGOTAAN_OPTIONS = [
+  { value: "simpatisan", label: "Simpatisan" },
+  { value: "baptis_anak", label: "Baptis Anak" },
+  { value: "sidi", label: "Sidi" },
+  { value: "anggota_penuh", label: "Anggota Penuh" },
+] as const;
+
+export type StatusKeanggotaan = (typeof STATUS_KEANGGOTAAN_OPTIONS)[number]["value"];
+
+export const STATUS_KEANGGOTAAN_LABEL: Record<StatusKeanggotaan, string> = {
+  simpatisan: "Simpatisan",
+  baptis_anak: "Baptis Anak",
+  sidi: "Sidi",
+  anggota_penuh: "Anggota Penuh",
+};
+
 /** Full jemaat profile fields, used on the Jemaat admin page. */
 export interface JemaatProfile extends JemaatWithLabels {
   jenis_kelamin: JenisKelamin | null;
@@ -66,7 +87,33 @@ export interface JemaatProfile extends JemaatWithLabels {
   tanggal_masuk: string | null;
   sudah_baptis: boolean;
   sudah_sidi: boolean;
+  keluarga_id: string | null;
+  hubungan_keluarga: string | null;
+  /** Left as a plain string, not StatusKeanggotaan - see the same caveat on SmkaKelompok.kelompok. */
+  status_keanggotaan: string | null;
+  pekerjaan: string | null;
+  nomor_anggota: string | null;
   wilayah: Pick<Wilayah, "id" | "nama"> | null;
+  keluarga: Keluarga | null;
+}
+
+/** A jemaat's other family members, for the "Anggota Keluarga" list on the detail dialog. */
+export interface KeluargaMember {
+  id: string;
+  nama: string;
+  hubungan_keluarga: string | null;
+  status_keanggotaan: string | null;
+}
+
+export interface JemaatCatatanPastoral {
+  id: string;
+  jemaat_id: string;
+  jenis: string;
+  tanggal: string;
+  penulis_id: string | null;
+  penulis_nama: string | null;
+  isi: string;
+  created_at: string;
 }
 
 export interface PeribadahanItem {

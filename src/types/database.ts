@@ -421,6 +421,11 @@ export interface Database {
           tanggal_masuk: string | null;
           sudah_baptis: boolean;
           sudah_sidi: boolean;
+          keluarga_id: string | null;
+          hubungan_keluarga: string | null;
+          status_keanggotaan: string | null;
+          pekerjaan: string | null;
+          nomor_anggota: string | null;
         };
         Insert: {
           id?: string;
@@ -434,6 +439,11 @@ export interface Database {
           tanggal_masuk?: string | null;
           sudah_baptis?: boolean;
           sudah_sidi?: boolean;
+          keluarga_id?: string | null;
+          hubungan_keluarga?: string | null;
+          status_keanggotaan?: string | null;
+          pekerjaan?: string | null;
+          nomor_anggota?: string | null;
         };
         Update: {
           id?: string;
@@ -447,6 +457,11 @@ export interface Database {
           tanggal_masuk?: string | null;
           sudah_baptis?: boolean;
           sudah_sidi?: boolean;
+          keluarga_id?: string | null;
+          hubungan_keluarga?: string | null;
+          status_keanggotaan?: string | null;
+          pekerjaan?: string | null;
+          nomor_anggota?: string | null;
         };
         Relationships: [
           {
@@ -454,6 +469,72 @@ export interface Database {
             columns: ["wilayah_id"];
             isOneToOne: false;
             referencedRelation: "wilayah";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "jemaat_keluarga_id_fkey";
+            columns: ["keluarga_id"];
+            isOneToOne: false;
+            referencedRelation: "keluarga";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      keluarga: {
+        Row: {
+          id: string;
+          nama: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          nama: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          nama?: string;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      jemaat_catatan_pastoral: {
+        Row: {
+          id: string;
+          jemaat_id: string;
+          jenis: string;
+          tanggal: string;
+          penulis_id: string | null;
+          penulis_nama: string | null;
+          isi: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          jemaat_id: string;
+          jenis: string;
+          tanggal?: string;
+          penulis_id?: string | null;
+          penulis_nama?: string | null;
+          isi: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          jemaat_id?: string;
+          jenis?: string;
+          tanggal?: string;
+          penulis_id?: string | null;
+          penulis_nama?: string | null;
+          isi?: string;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "jemaat_catatan_pastoral_jemaat_id_fkey";
+            columns: ["jemaat_id"];
+            isOneToOne: false;
+            referencedRelation: "jemaat";
             referencedColumns: ["id"];
           },
         ];

@@ -47,7 +47,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     },
     { href: "/admin/tempat", label: "Tempat", show: canReadWarta, children: [] },
     { href: "/admin/wilayah", label: "Wilayah", show: canReadWarta, children: [] },
-    { href: "/admin/jemaat", label: "Jemaat", show: canReadWarta, children: [] },
+    { href: "/admin/jemaat", label: "Data Jemaat", show: canReadWarta, children: [] },
+    { href: "/admin/keluarga", label: "Keluarga", show: canReadWarta, children: [] },
     { href: "/admin/label-jemaat", label: "Label Jemaat", show: canReadWarta, children: [] },
     { href: "/admin/users", label: "Pengguna", show: hasPermission(user, "users", "read"), children: [] },
     {
