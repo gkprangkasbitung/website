@@ -33,7 +33,7 @@ export default async function RolesPage() {
           <Card key={role.id}>
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>{role.name}</CardTitle>
-              {canDelete && <DeleteRoleButton roleId={role.id} />}
+              {canDelete && <DeleteRoleButton roleId={role.id} roleName={role.name} />}
             </CardHeader>
             <CardContent>
               {role.description && (

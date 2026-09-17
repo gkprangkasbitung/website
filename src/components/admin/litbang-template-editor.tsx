@@ -21,6 +21,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { GripVertical } from "lucide-react";
+import { ConfirmDeleteButton } from "@/components/admin/confirm-delete-button";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -152,9 +153,7 @@ function LitbangCard({ row, disabled }: { row: LitbangCategory; disabled?: boole
           <Button size="sm" variant="outline" onClick={onSave} disabled={isPending}>
             Simpan
           </Button>
-          <Button size="sm" variant="ghost" onClick={onDelete} disabled={isPending}>
-            Hapus
-          </Button>
+          <ConfirmDeleteButton onConfirm={onDelete} isPending={isPending} title={`Hapus "${row.name}"?`} />
         </div>
       )}
     </div>

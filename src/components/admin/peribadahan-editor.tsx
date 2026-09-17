@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
+import { ConfirmDeleteButton } from "@/components/admin/confirm-delete-button";
 import { JemaatSelect } from "@/components/admin/jemaat-select";
 import { SortableTableHead } from "@/components/admin/sortable-table-head";
 import { Button } from "@/components/ui/button";
@@ -244,7 +245,6 @@ function ItemCard({
   wilayahList,
   jemaatList,
   disabled,
-  onDeleted,
 }: {
   item: PeribadahanItemWithRelations;
   config: FieldConfig;
@@ -254,7 +254,6 @@ function ItemCard({
   wilayahList: Wilayah[];
   jemaatList: JemaatWithLabels[];
   disabled?: boolean;
-  onDeleted?: () => void;
 }) {
   const router = useRouter();
   const [values, setValues] = useState({
@@ -291,22 +290,6 @@ function ItemCard({
       }
 
       toast.success("Tersimpan");
-      router.refresh();
-    });
-  }
-
-  function onDelete() {
-    startTransition(async () => {
-      const res = await fetch(`/api/admin/peribadahan/${item.id}`, { method: "DELETE" });
-
-      if (!res.ok) {
-        const data = await res.json().catch(() => null);
-        toast.error(data?.error ?? "Gagal menghapus");
-        return;
-      }
-
-      toast.success("Baris dihapus");
-      onDeleted?.();
       router.refresh();
     });
   }
@@ -408,9 +391,6 @@ function ItemCard({
           <Button size="sm" variant="outline" onClick={onSave} disabled={isPending}>
             Simpan
           </Button>
-          <Button size="sm" variant="ghost" onClick={onDelete} disabled={isPending}>
-            Hapus
-          </Button>
         </div>
       )}
     </div>
@@ -425,14 +405,12 @@ function SmkaItemCard({
   bare,
   jemaatList,
   disabled,
-  onDeleted,
 }: {
   item: PeribadahanItemWithRelations;
   /** Skip the outer border/padding - used when already inside a Dialog. */
   bare?: boolean;
   jemaatList: JemaatWithLabels[];
   disabled?: boolean;
-  onDeleted?: () => void;
 }) {
   const router = useRouter();
   const [values, setValues] = useState({
@@ -495,22 +473,6 @@ function SmkaItemCard({
       }
 
       toast.success("Tersimpan");
-      router.refresh();
-    });
-  }
-
-  function onDelete() {
-    startTransition(async () => {
-      const res = await fetch(`/api/admin/peribadahan/${item.id}`, { method: "DELETE" });
-
-      if (!res.ok) {
-        const data = await res.json().catch(() => null);
-        toast.error(data?.error ?? "Gagal menghapus");
-        return;
-      }
-
-      toast.success("Baris dihapus");
-      onDeleted?.();
       router.refresh();
     });
   }
@@ -616,9 +578,6 @@ function SmkaItemCard({
         <div className="flex gap-2">
           <Button size="sm" variant="outline" onClick={onSave} disabled={isPending}>
             Simpan
-          </Button>
-          <Button size="sm" variant="ghost" onClick={onDelete} disabled={isPending}>
-            Hapus
           </Button>
         </div>
       )}
@@ -781,6 +740,28 @@ function getCategoryColumns(key: string | undefined, config: FieldConfig): Categ
   return columns;
 }
 
+function DeletePeribadahanRowButton({ itemId, title }: { itemId: string; title: string }) {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+
+  function onDelete() {
+    startTransition(async () => {
+      const res = await fetch(`/api/admin/peribadahan/${itemId}`, { method: "DELETE" });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        toast.error(data?.error ?? "Gagal menghapus");
+        return;
+      }
+
+      toast.success("Baris dihapus");
+      router.refresh();
+    });
+  }
+
+  return <ConfirmDeleteButton onConfirm={onDelete} isPending={isPending} title={`Hapus "${title}"?`} />;
+}
+
 function ItemRow({
   item,
   showCategory,
@@ -822,23 +803,17 @@ function ItemRow({
       ) : (
         <TableCell className="max-w-64 truncate">{summarize(item)}</TableCell>
       )}
-      <TableCell>
+      <TableCell className="space-x-2 whitespace-nowrap">
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger render={<Button size="sm" variant="outline" />}>
-            {disabled ? "Lihat" : "Detail"}
+            {disabled ? "Lihat" : "Edit"}
           </DialogTrigger>
           <DialogContent className="max-h-[85vh] max-w-2xl overflow-y-auto">
             <DialogHeader>
               <DialogTitle>{dialogTitle}</DialogTitle>
             </DialogHeader>
             {isSmka ? (
-              <SmkaItemCard
-                item={item}
-                bare
-                jemaatList={jemaatList}
-                disabled={disabled}
-                onDeleted={() => setOpen(false)}
-              />
+              <SmkaItemCard item={item} bare jemaatList={jemaatList} disabled={disabled} />
             ) : (
               <ItemCard
                 item={item}
@@ -848,11 +823,11 @@ function ItemRow({
                 wilayahList={wilayahList}
                 jemaatList={jemaatList}
                 disabled={disabled}
-                onDeleted={() => setOpen(false)}
               />
             )}
           </DialogContent>
         </Dialog>
+        {!disabled && <DeletePeribadahanRowButton itemId={item.id} title={dialogTitle} />}
       </TableCell>
     </TableRow>
   );

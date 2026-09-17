@@ -55,7 +55,7 @@ function EditKeteranganDialog({ item, disabled }: { item: SaranaDanaBalance; dis
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger render={<Button size="sm" variant="outline" />}>
-        {disabled ? "Lihat" : "Detail"}
+        {disabled ? "Lihat" : "Edit"}
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>

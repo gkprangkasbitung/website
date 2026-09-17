@@ -3,11 +3,8 @@ import { logActivity } from "@/lib/activity-log";
 import { requirePermissionApi } from "@/lib/rbac/dal";
 import { createClient } from "@/lib/supabase/server";
 
-/**
- * Adds a pastoral care note to one jemaat. Notes are an append-only log
- * (no PATCH/DELETE) - a wrong entry should be corrected by adding a new
- * note, not by editing history.
- */
+/** Adds a pastoral care note to one jemaat. See `[catatanId]/route.ts` for
+ * editing/deleting an existing note. */
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const auth = await requirePermissionApi("warta", "update");
   if (!auth.ok) {

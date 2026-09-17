@@ -68,7 +68,7 @@ export default async function KeluargaPage({
         <TableSearchInput placeholder="Cari nama keluarga..." />
         {canEdit && <AddKeluargaDialog />}
       </div>
-      <KeluargaEditor items={items} />
+      <KeluargaEditor items={items} disabled={!canEdit} />
       <PaginationBar page={page} pageSize={pageSize} totalItems={count ?? 0} entryLabel="keluarga" />
     </div>
   );

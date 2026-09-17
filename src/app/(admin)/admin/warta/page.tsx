@@ -5,6 +5,7 @@ import { TableDateRangeFilter } from "@/components/admin/table-date-range-filter
 import { TableSearchInput } from "@/components/admin/table-search-input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { DeleteWartaRowButton } from "./delete-warta-row-button";
 import {
   Table,
   TableBody,
@@ -36,6 +37,7 @@ export default async function WartaListPage({
   await requirePermission("warta", "read");
   const currentUser = await getAuthenticatedUser();
   const canCreate = hasPermission(currentUser, "warta", "create");
+  const canDelete = hasPermission(currentUser, "warta", "delete");
 
   const { page: pageParam, pageSize: pageSizeParam, sort, dir, q, from, to } = await searchParams;
   const pageSize = parsePageSize(pageSizeParam);
@@ -94,7 +96,7 @@ export default async function WartaListPage({
                   {warta.status === "published" ? "Published" : "Draft"}
                 </Badge>
               </TableCell>
-              <TableCell>
+              <TableCell className="space-x-2 whitespace-nowrap">
                 <Button
                   size="sm"
                   variant="outline"
@@ -103,6 +105,7 @@ export default async function WartaListPage({
                 >
                   Edit
                 </Button>
+                {canDelete && <DeleteWartaRowButton wartaId={warta.id} judul={warta.judul_kebaktian} />}
               </TableCell>
             </TableRow>
           ))}

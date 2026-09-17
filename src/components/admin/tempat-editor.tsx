@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
+import { ConfirmDeleteButton } from "@/components/admin/confirm-delete-button";
 import { SortableTableHead } from "@/components/admin/sortable-table-head";
 import { Button } from "@/components/ui/button";
 import {
@@ -52,26 +53,10 @@ function EditTempatDialog({ tempat, disabled }: { tempat: Tempat; disabled?: boo
     });
   }
 
-  function onDelete() {
-    startTransition(async () => {
-      const res = await fetch(`/api/admin/tempat/${tempat.id}`, { method: "DELETE" });
-
-      if (!res.ok) {
-        const data = await res.json().catch(() => null);
-        toast.error(data?.error ?? "Gagal menghapus");
-        return;
-      }
-
-      toast.success("Tempat dihapus");
-      setOpen(false);
-      router.refresh();
-    });
-  }
-
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger render={<Button size="sm" variant="outline" />}>
-        {disabled ? "Lihat" : "Detail"}
+        {disabled ? "Lihat" : "Edit"}
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
@@ -99,9 +84,6 @@ function EditTempatDialog({ tempat, disabled }: { tempat: Tempat; disabled?: boo
           </div>
           {!disabled && (
             <DialogFooter>
-              <Button size="sm" variant="ghost" onClick={onDelete} disabled={isPending}>
-                Hapus
-              </Button>
               <Button onClick={onSave} disabled={isPending}>
                 {isPending ? "Menyimpan..." : "Simpan"}
               </Button>
@@ -113,13 +95,38 @@ function EditTempatDialog({ tempat, disabled }: { tempat: Tempat; disabled?: boo
   );
 }
 
+function DeleteTempatButton({ tempat }: { tempat: Tempat }) {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+
+  function onDelete() {
+    startTransition(async () => {
+      const res = await fetch(`/api/admin/tempat/${tempat.id}`, { method: "DELETE" });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        toast.error(data?.error ?? "Gagal menghapus");
+        return;
+      }
+
+      toast.success("Tempat dihapus");
+      router.refresh();
+    });
+  }
+
+  return (
+    <ConfirmDeleteButton onConfirm={onDelete} isPending={isPending} title={`Hapus tempat "${tempat.nama}"?`} />
+  );
+}
+
 function TempatRow({ tempat, disabled }: { tempat: Tempat; disabled?: boolean }) {
   return (
     <TableRow>
       <TableCell>{tempat.nama}</TableCell>
       <TableCell className="max-w-64 truncate">{tempat.keterangan ?? "-"}</TableCell>
-      <TableCell>
+      <TableCell className="space-x-2 whitespace-nowrap">
         <EditTempatDialog tempat={tempat} disabled={disabled} />
+        {!disabled && <DeleteTempatButton tempat={tempat} />}
       </TableCell>
     </TableRow>
   );

@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
+import { ConfirmDeleteButton } from "@/components/admin/confirm-delete-button";
 import { SortableTableHead } from "@/components/admin/sortable-table-head";
 import { Button } from "@/components/ui/button";
 import {
@@ -51,26 +52,10 @@ function EditLabelDialog({ item, disabled }: { item: LabelJemaat; disabled?: boo
     });
   }
 
-  function onDelete() {
-    startTransition(async () => {
-      const res = await fetch(`/api/admin/label-jemaat/${item.id}`, { method: "DELETE" });
-
-      if (!res.ok) {
-        const data = await res.json().catch(() => null);
-        toast.error(data?.error ?? "Gagal menghapus");
-        return;
-      }
-
-      toast.success("Label dihapus");
-      setOpen(false);
-      router.refresh();
-    });
-  }
-
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger render={<Button size="sm" variant="outline" />}>
-        {disabled ? "Lihat" : "Detail"}
+        {disabled ? "Lihat" : "Edit"}
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
@@ -88,9 +73,6 @@ function EditLabelDialog({ item, disabled }: { item: LabelJemaat; disabled?: boo
           </div>
           {!disabled && (
             <DialogFooter>
-              <Button size="sm" variant="ghost" onClick={onDelete} disabled={isPending}>
-                Hapus
-              </Button>
               <Button onClick={onSave} disabled={isPending}>
                 {isPending ? "Menyimpan..." : "Simpan"}
               </Button>
@@ -102,12 +84,35 @@ function EditLabelDialog({ item, disabled }: { item: LabelJemaat; disabled?: boo
   );
 }
 
+function DeleteLabelButton({ item }: { item: LabelJemaat }) {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+
+  function onDelete() {
+    startTransition(async () => {
+      const res = await fetch(`/api/admin/label-jemaat/${item.id}`, { method: "DELETE" });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        toast.error(data?.error ?? "Gagal menghapus");
+        return;
+      }
+
+      toast.success("Label dihapus");
+      router.refresh();
+    });
+  }
+
+  return <ConfirmDeleteButton onConfirm={onDelete} isPending={isPending} title={`Hapus label "${item.nama}"?`} />;
+}
+
 function LabelRow({ item, disabled }: { item: LabelJemaat; disabled?: boolean }) {
   return (
     <TableRow>
       <TableCell>{item.nama}</TableCell>
-      <TableCell>
+      <TableCell className="space-x-2 whitespace-nowrap">
         <EditLabelDialog item={item} disabled={disabled} />
+        {!disabled && <DeleteLabelButton item={item} />}
       </TableCell>
     </TableRow>
   );

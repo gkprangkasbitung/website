@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
+import { ConfirmDeleteButton } from "@/components/admin/confirm-delete-button";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -79,9 +80,11 @@ function KesaksianItemCard({
             <Button size="sm" variant="outline" onClick={onSave} disabled={isPending}>
               Simpan
             </Button>
-            <Button size="sm" variant="ghost" onClick={onDelete} disabled={isPending}>
-              Hapus
-            </Button>
+            <ConfirmDeleteButton
+              onConfirm={onDelete}
+              isPending={isPending}
+              title={item.judul ? `Hapus "${item.judul}"?` : "Hapus item kesaksian ini?"}
+            />
           </div>
         )}
       </CardContent>

@@ -1,12 +1,26 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Plus } from "lucide-react";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
+import { ConfirmDeleteButton } from "@/components/admin/confirm-delete-button";
 import { HubunganKeluargaSelect } from "@/components/admin/hubungan-keluarga-select";
+import { KeluargaSelect } from "@/components/admin/keluarga-select";
 import { SortableTableHead } from "@/components/admin/sortable-table-head";
 import { StatusBadge } from "@/components/admin/status-badge";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -39,6 +53,7 @@ import {
   type JemaatCatatanPastoral,
   type JemaatProfile,
   type JenisKelamin,
+  type Keluarga,
   type KeluargaMember,
   type LabelJemaat,
   type Wilayah,
@@ -49,7 +64,7 @@ const JENIS_KELAMIN_LABEL: Record<JenisKelamin, string> = {
   perempuan: "Perempuan",
 };
 
-type ProfileFormValues = {
+export type ProfileFormValues = {
   nama: string;
   labelIds: string[];
   jenis_kelamin: JenisKelamin | null;
@@ -83,7 +98,7 @@ function emptyValues(): ProfileFormValues {
   };
 }
 
-function valuesFromJemaat(jemaat: JemaatProfile): ProfileFormValues {
+export function valuesFromJemaat(jemaat: JemaatProfile): ProfileFormValues {
   return {
     nama: jemaat.nama,
     labelIds: jemaat.labels.map((l) => l.id),
@@ -101,7 +116,7 @@ function valuesFromJemaat(jemaat: JemaatProfile): ProfileFormValues {
   };
 }
 
-function toPayload(values: ProfileFormValues) {
+export function toPayload(values: ProfileFormValues) {
   return {
     nama: values.nama,
     label_ids: values.labelIds,
@@ -247,17 +262,19 @@ function WilayahSelect({
   );
 }
 
-function ProfileFields({
+export function ProfileFields({
   values,
   set,
   allLabels,
   allWilayah,
+  allKeluarga,
   disabled,
 }: {
   values: ProfileFormValues;
   set: <K extends keyof ProfileFormValues>(key: K, value: ProfileFormValues[K]) => void;
   allLabels: LabelJemaat[];
   allWilayah: Wilayah[];
+  allKeluarga: Keluarga[];
   disabled?: boolean;
 }) {
   return (
@@ -323,7 +340,13 @@ function ProfileFields({
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="space-y-2">
           <Label htmlFor="no_hp">Nomor HP/WA</Label>
-          <Input id="no_hp" value={values.no_hp} onChange={(e) => set("no_hp", e.target.value)} disabled={disabled} />
+          <Input
+            id="no_hp"
+            inputMode="numeric"
+            value={values.no_hp}
+            onChange={(e) => set("no_hp", e.target.value.replace(/\D/g, ""))}
+            disabled={disabled}
+          />
         </div>
         <div className="space-y-2">
           <Label htmlFor="tanggal_lahir">Tanggal Lahir</Label>
@@ -348,12 +371,11 @@ function ProfileFields({
       </div>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="space-y-2">
-          <Label htmlFor="keluarga">Nama Keluarga</Label>
-          <Input
-            id="keluarga"
+          <Label>Nama Keluarga</Label>
+          <KeluargaSelect
             value={values.keluargaNama}
-            onChange={(e) => set("keluargaNama", e.target.value)}
-            placeholder="mis. Kel. Saragih"
+            onChange={(v) => set("keluargaNama", v)}
+            allKeluarga={allKeluarga}
             disabled={disabled}
           />
         </div>
@@ -367,14 +389,14 @@ function ProfileFields({
         </div>
       </div>
       <div className="space-y-2">
-        <Label>Label/Jabatan</Label>
+        <Label>Label</Label>
         <LabelMultiSelect allLabels={allLabels} value={values.labelIds} onChange={(v) => set("labelIds", v)} disabled={disabled} />
       </div>
     </>
   );
 }
 
-function KeluargaAnggotaList({ members }: { members: KeluargaMember[] }) {
+export function KeluargaAnggotaList({ members }: { members: KeluargaMember[] }) {
   if (members.length === 0) {
     return <p className="text-sm text-muted-foreground">Belum ada anggota keluarga lain yang tercatat.</p>;
   }
@@ -384,7 +406,9 @@ function KeluargaAnggotaList({ members }: { members: KeluargaMember[] }) {
       {members.map((m) => (
         <div key={m.id} className="flex items-center justify-between gap-3 px-3 py-2 text-sm">
           <div>
-            <p className="font-medium">{m.nama}</p>
+            <Link href={`/admin/jemaat/${m.id}`} className="font-medium hover:underline">
+              {m.nama}
+            </Link>
             <p className="text-xs text-muted-foreground">{m.hubungan_keluarga ?? "-"}</p>
           </div>
           <StatusBadge status={m.status_keanggotaan} />
@@ -394,7 +418,159 @@ function KeluargaAnggotaList({ members }: { members: KeluargaMember[] }) {
   );
 }
 
-function CatatanPastoralSection({
+function CatatanFields({
+  jenis,
+  setJenis,
+  tanggal,
+  setTanggal,
+  isi,
+  setIsi,
+  disabled,
+}: {
+  jenis: string;
+  setJenis: (value: string) => void;
+  tanggal: string;
+  setTanggal: (value: string) => void;
+  isi: string;
+  setIsi: (value: string) => void;
+  disabled?: boolean;
+}) {
+  return (
+    <>
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+        <Input placeholder="Jenis (mis. Kunjungan)" value={jenis} onChange={(e) => setJenis(e.target.value)} disabled={disabled} />
+        <Input type="date" value={tanggal} onChange={(e) => setTanggal(e.target.value)} disabled={disabled} />
+      </div>
+      <textarea
+        value={isi}
+        onChange={(e) => setIsi(e.target.value)}
+        disabled={disabled}
+        rows={3}
+        placeholder="Hasil kunjungan, pergumulan keluarga, kebutuhan diakonia..."
+        className="w-full rounded-lg border border-input bg-transparent px-3 py-2 text-sm outline-none disabled:opacity-50 focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+      />
+    </>
+  );
+}
+
+function EditCatatanDialog({
+  jemaatId,
+  note,
+}: {
+  jemaatId: string;
+  note: JemaatCatatanPastoral;
+}) {
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const [jenis, setJenis] = useState(note.jenis);
+  const [tanggal, setTanggal] = useState(note.tanggal);
+  const [isi, setIsi] = useState(note.isi);
+  const [isPending, startTransition] = useTransition();
+
+  function onSave() {
+    if (!jenis.trim() || !isi.trim()) {
+      toast.error("Jenis dan isi catatan wajib diisi");
+      return;
+    }
+
+    startTransition(async () => {
+      const res = await fetch(`/api/admin/jemaat/${jemaatId}/catatan-pastoral/${note.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ jenis, tanggal, isi }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        toast.error(data?.error ?? "Gagal menyimpan catatan");
+        return;
+      }
+
+      toast.success("Catatan diperbarui");
+      setOpen(false);
+      router.refresh();
+    });
+  }
+
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        setOpen(next);
+        if (next) {
+          setJenis(note.jenis);
+          setTanggal(note.tanggal);
+          setIsi(note.isi);
+        }
+      }}
+    >
+      <DialogTrigger render={<Button size="sm" variant="ghost" />}>Edit</DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Edit Catatan Pastoral</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-3">
+          <CatatanFields
+            jenis={jenis}
+            setJenis={setJenis}
+            tanggal={tanggal}
+            setTanggal={setTanggal}
+            isi={isi}
+            setIsi={setIsi}
+            disabled={isPending}
+          />
+        </div>
+        <DialogFooter>
+          <Button onClick={onSave} disabled={isPending}>
+            {isPending ? "Menyimpan..." : "Simpan"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function DeleteCatatanButton({ jemaatId, noteId }: { jemaatId: string; noteId: string }) {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+
+  function onDelete() {
+    startTransition(async () => {
+      const res = await fetch(`/api/admin/jemaat/${jemaatId}/catatan-pastoral/${noteId}`, {
+        method: "DELETE",
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        toast.error(data?.error ?? "Gagal menghapus catatan");
+        return;
+      }
+
+      toast.success("Catatan dihapus");
+      router.refresh();
+    });
+  }
+
+  return (
+    <AlertDialog>
+      <AlertDialogTrigger render={<Button size="sm" variant="ghost" />}>Hapus</AlertDialogTrigger>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Hapus catatan ini?</AlertDialogTitle>
+          <AlertDialogDescription>Tindakan ini tidak bisa dibatalkan.</AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Batal</AlertDialogCancel>
+          <AlertDialogAction onClick={onDelete} disabled={isPending}>
+            {isPending ? "Menghapus..." : "Hapus"}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+}
+
+export function CatatanPastoralSection({
   jemaatId,
   notes,
   disabled,
@@ -440,33 +616,48 @@ function CatatanPastoralSection({
       {notes.length === 0 ? (
         <p className="text-sm text-muted-foreground">Belum ada catatan pastoral.</p>
       ) : (
-        <div className="space-y-2">
-          {notes.map((n) => (
-            <div key={n.id} className="rounded-lg border p-3 text-sm">
-              <div className="mb-1 flex flex-wrap items-center gap-2">
-                <Badge variant="secondary">{n.jenis}</Badge>
-                <span className="text-xs text-muted-foreground">
-                  {n.tanggal} · {n.penulis_nama ?? "-"}
-                </span>
-              </div>
-              <p className="text-sm">{n.isi}</p>
-            </div>
-          ))}
+        <div className="overflow-hidden rounded-lg border">
+          <Table>
+            <TableHeader>
+              <TableRow className="hover:bg-transparent">
+                <TableHead className="whitespace-nowrap">Tanggal</TableHead>
+                <TableHead>Jenis</TableHead>
+                <TableHead>Penulis</TableHead>
+                <TableHead>Isi</TableHead>
+                {!disabled && <TableHead></TableHead>}
+              </TableRow>
+            </TableHeader>
+            <TableBody className="[&>tr:nth-child(even)]:bg-muted/40">
+              {notes.map((n) => (
+                <TableRow key={n.id}>
+                  <TableCell className="whitespace-nowrap align-top">{n.tanggal}</TableCell>
+                  <TableCell className="align-top">
+                    <Badge variant="secondary">{n.jenis}</Badge>
+                  </TableCell>
+                  <TableCell className="whitespace-nowrap align-top">{n.penulis_nama ?? "-"}</TableCell>
+                  <TableCell className="whitespace-normal">{n.isi}</TableCell>
+                  {!disabled && (
+                    <TableCell className="whitespace-nowrap text-right align-top">
+                      <EditCatatanDialog jemaatId={jemaatId} note={n} />
+                      <DeleteCatatanButton jemaatId={jemaatId} noteId={n.id} />
+                    </TableCell>
+                  )}
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         </div>
       )}
       {!disabled && (
         <div className="space-y-2 rounded-lg border p-3">
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-            <Input placeholder="Jenis (mis. Kunjungan)" value={jenis} onChange={(e) => setJenis(e.target.value)} disabled={isPending} />
-            <Input type="date" value={tanggal} onChange={(e) => setTanggal(e.target.value)} disabled={isPending} />
-          </div>
-          <textarea
-            value={isi}
-            onChange={(e) => setIsi(e.target.value)}
+          <CatatanFields
+            jenis={jenis}
+            setJenis={setJenis}
+            tanggal={tanggal}
+            setTanggal={setTanggal}
+            isi={isi}
+            setIsi={setIsi}
             disabled={isPending}
-            rows={3}
-            placeholder="Hasil kunjungan, pergumulan keluarga, kebutuhan diakonia..."
-            className="w-full rounded-lg border border-input bg-transparent px-3 py-2 text-sm outline-none disabled:opacity-50 focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
           />
           <Button size="sm" onClick={onSubmit} disabled={isPending}>
             {isPending ? "Menyimpan..." : "Simpan Catatan"}
@@ -477,49 +668,9 @@ function CatatanPastoralSection({
   );
 }
 
-function EditJemaatDialog({
-  jemaat,
-  allLabels,
-  allWilayah,
-  familyMembers,
-  pastoralNotes,
-  disabled,
-}: {
-  jemaat: JemaatProfile;
-  allLabels: LabelJemaat[];
-  allWilayah: Wilayah[];
-  familyMembers: KeluargaMember[];
-  pastoralNotes: JemaatCatatanPastoral[];
-  disabled?: boolean;
-}) {
+function DeleteJemaatRowButton({ jemaat }: { jemaat: JemaatProfile }) {
   const router = useRouter();
-  const [open, setOpen] = useState(false);
-  const [values, setValues] = useState<ProfileFormValues>(() => valuesFromJemaat(jemaat));
   const [isPending, startTransition] = useTransition();
-
-  function set<K extends keyof ProfileFormValues>(key: K, value: ProfileFormValues[K]) {
-    setValues((prev) => ({ ...prev, [key]: value }));
-  }
-
-  function onSave() {
-    startTransition(async () => {
-      const res = await fetch(`/api/admin/jemaat/${jemaat.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(toPayload(values)),
-      });
-
-      if (!res.ok) {
-        const data = await res.json().catch(() => null);
-        toast.error(data?.error ?? "Gagal menyimpan");
-        return;
-      }
-
-      toast.success("Tersimpan");
-      setOpen(false);
-      router.refresh();
-    });
-  }
 
   function onDelete() {
     startTransition(async () => {
@@ -532,78 +683,14 @@ function EditJemaatDialog({
       }
 
       toast.success("Jemaat dihapus");
-      setOpen(false);
       router.refresh();
     });
   }
 
-  return (
-    <Dialog
-      open={open}
-      onOpenChange={(next) => {
-        setOpen(next);
-        if (next) setValues(valuesFromJemaat(jemaat));
-      }}
-    >
-      <DialogTrigger render={<Button size="sm" variant="link" className="h-auto p-0" />}>
-        {disabled ? "Lihat" : "Detail"}
-      </DialogTrigger>
-      <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>{jemaat.nama}</DialogTitle>
-        </DialogHeader>
-        <div className="space-y-6">
-          <div className="space-y-4">
-            <ProfileFields
-              values={values}
-              set={set}
-              allLabels={allLabels}
-              allWilayah={allWilayah}
-              disabled={disabled || isPending}
-            />
-          </div>
-
-          <div className="space-y-2">
-            <h4 className="text-sm font-medium">Anggota Keluarga</h4>
-            <KeluargaAnggotaList members={familyMembers} />
-          </div>
-
-          <div className="space-y-2">
-            <h4 className="text-sm font-medium">Catatan Pastoral</h4>
-            <CatatanPastoralSection jemaatId={jemaat.id} notes={pastoralNotes} disabled={disabled} />
-          </div>
-
-          {!disabled && (
-            <DialogFooter>
-              <Button size="sm" variant="ghost" onClick={onDelete} disabled={isPending}>
-                Hapus
-              </Button>
-              <Button onClick={onSave} disabled={isPending}>
-                {isPending ? "Menyimpan..." : "Simpan"}
-              </Button>
-            </DialogFooter>
-          )}
-        </div>
-      </DialogContent>
-    </Dialog>
-  );
+  return <ConfirmDeleteButton onConfirm={onDelete} isPending={isPending} title={`Hapus ${jemaat.nama}?`} />;
 }
 
-function JemaatRow({
-  jemaat,
-  allLabels,
-  allWilayah,
-  familyMembers,
-  pastoralNotes,
-  disabled,
-}: {
-  jemaat: JemaatProfile;
-  allLabels: LabelJemaat[];
-  allWilayah: Wilayah[];
-  familyMembers: KeluargaMember[];
-  pastoralNotes: JemaatCatatanPastoral[];
-  disabled?: boolean;
-}) {
+function JemaatRow({ jemaat, disabled }: { jemaat: JemaatProfile; disabled?: boolean }) {
   return (
     <TableRow>
       <TableCell className="whitespace-nowrap font-mono text-xs">{jemaat.nomor_anggota ?? "-"}</TableCell>
@@ -614,21 +701,31 @@ function JemaatRow({
         <StatusBadge status={jemaat.status_keanggotaan} />
       </TableCell>
       <TableCell className="whitespace-nowrap">{jemaat.no_hp ?? "-"}</TableCell>
-      <TableCell className="text-right">
-        <EditJemaatDialog
-          jemaat={jemaat}
-          allLabels={allLabels}
-          allWilayah={allWilayah}
-          familyMembers={familyMembers}
-          pastoralNotes={pastoralNotes}
-          disabled={disabled}
-        />
+      <TableCell className="space-x-2 whitespace-nowrap text-right">
+        <Button
+          size="sm"
+          variant={disabled ? "link" : "outline"}
+          className={disabled ? "h-auto p-0" : undefined}
+          render={<Link href={`/admin/jemaat/${jemaat.id}`} />}
+          nativeButton={false}
+        >
+          {disabled ? "Lihat" : "Edit"}
+        </Button>
+        {!disabled && <DeleteJemaatRowButton jemaat={jemaat} />}
       </TableCell>
     </TableRow>
   );
 }
 
-export function AddJemaatDialog({ allLabels, allWilayah }: { allLabels: LabelJemaat[]; allWilayah: Wilayah[] }) {
+export function AddJemaatDialog({
+  allLabels,
+  allWilayah,
+  allKeluarga,
+}: {
+  allLabels: LabelJemaat[];
+  allWilayah: Wilayah[];
+  allKeluarga: Keluarga[];
+}) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [values, setValues] = useState<ProfileFormValues>(emptyValues);
@@ -675,7 +772,14 @@ export function AddJemaatDialog({ allLabels, allWilayah }: { allLabels: LabelJem
           <DialogTitle>Tambah Jemaat</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
-          <ProfileFields values={values} set={set} allLabels={allLabels} allWilayah={allWilayah} disabled={isPending} />
+          <ProfileFields
+            values={values}
+            set={set}
+            allLabels={allLabels}
+            allWilayah={allWilayah}
+            allKeluarga={allKeluarga}
+            disabled={isPending}
+          />
           <DialogFooter>
             <Button type="button" onClick={onSubmit} disabled={isPending}>
               {isPending ? "Menyimpan..." : "Tambah"}
@@ -687,21 +791,7 @@ export function AddJemaatDialog({ allLabels, allWilayah }: { allLabels: LabelJem
   );
 }
 
-export function JemaatEditor({
-  items,
-  allLabels,
-  allWilayah,
-  familyByKeluarga,
-  notesByJemaat,
-  disabled,
-}: {
-  items: JemaatProfile[];
-  allLabels: LabelJemaat[];
-  allWilayah: Wilayah[];
-  familyByKeluarga: Record<string, KeluargaMember[]>;
-  notesByJemaat: Record<string, JemaatCatatanPastoral[]>;
-  disabled?: boolean;
-}) {
+export function JemaatEditor({ items, disabled }: { items: JemaatProfile[]; disabled?: boolean }) {
   const headClassName = "uppercase tracking-wide text-[11px]";
 
   return (
@@ -722,19 +812,7 @@ export function JemaatEditor({
         </TableHeader>
         <TableBody className="[&>tr:nth-child(even)]:bg-muted/40">
           {items.map((item) => (
-            <JemaatRow
-              key={item.id}
-              jemaat={item}
-              allLabels={allLabels}
-              allWilayah={allWilayah}
-              familyMembers={
-                item.keluarga_id
-                  ? (familyByKeluarga[item.keluarga_id] ?? []).filter((m) => m.id !== item.id)
-                  : []
-              }
-              pastoralNotes={notesByJemaat[item.id] ?? []}
-              disabled={disabled}
-            />
+            <JemaatRow key={item.id} jemaat={item} disabled={disabled} />
           ))}
           {items.length === 0 && (
             <TableRow>

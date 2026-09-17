@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
@@ -66,7 +67,11 @@ function MemberRow({ member, disabled }: { member: JemaatProfile; disabled?: boo
   return (
     <TableRow>
       <TableCell className="whitespace-nowrap font-mono text-xs">{member.nomor_anggota ?? "-"}</TableCell>
-      <TableCell className="font-medium">{member.nama}</TableCell>
+      <TableCell className="font-medium">
+        <Link href={`/admin/jemaat/${member.id}`} className="hover:underline">
+          {member.nama}
+        </Link>
+      </TableCell>
       <TableCell>{member.wilayah?.nama ?? "-"}</TableCell>
       <TableCell>
         <StatusBadge status={member.status_keanggotaan} />

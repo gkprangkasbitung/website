@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
+import { ConfirmDeleteButton } from "@/components/admin/confirm-delete-button";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -70,7 +71,7 @@ export function CreateRoleDialog() {
   );
 }
 
-export function DeleteRoleButton({ roleId }: { roleId: string }) {
+export function DeleteRoleButton({ roleId, roleName }: { roleId: string; roleName: string }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
@@ -90,8 +91,11 @@ export function DeleteRoleButton({ roleId }: { roleId: string }) {
   }
 
   return (
-    <Button size="sm" variant="ghost" disabled={isPending} onClick={onDelete}>
-      Hapus
-    </Button>
+    <ConfirmDeleteButton
+      onConfirm={onDelete}
+      isPending={isPending}
+      title={`Hapus role "${roleName}"?`}
+      description="Pengguna dengan role ini akan kehilangan seluruh permission-nya. Tindakan ini tidak bisa dibatalkan."
+    />
   );
 }

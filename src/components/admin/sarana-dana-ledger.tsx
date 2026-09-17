@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
+import { ConfirmDeleteButton } from "@/components/admin/confirm-delete-button";
 import { JemaatSelect } from "@/components/admin/jemaat-select";
 import { SortableTableHead } from "@/components/admin/sortable-table-head";
 import { Badge } from "@/components/ui/badge";
@@ -37,12 +38,147 @@ import type { JemaatWithLabels, SaranaDanaTransactionType, SaranaDanaTransaction
 
 const PERSEMBAHAN_KEY = "persembahan_bulanan";
 
+function EditTransactionDialog({
+  itemId,
+  itemKey,
+  transaction,
+}: {
+  itemId: string;
+  itemKey: string;
+  transaction: SaranaDanaTransactionWithJemaat;
+}) {
+  const router = useRouter();
+  const isPersembahan = itemKey === PERSEMBAHAN_KEY;
+  const [open, setOpen] = useState(false);
+  const [tanggal, setTanggal] = useState(transaction.tanggal);
+  const [tipe, setTipe] = useState<SaranaDanaTransactionType>(transaction.tipe);
+  const [jumlah, setJumlah] = useState(String(transaction.jumlah));
+  const [keterangan, setKeterangan] = useState(transaction.keterangan ?? "");
+  const [isPending, startTransition] = useTransition();
+
+  function onSave() {
+    if (!jumlah) {
+      toast.error("Jumlah wajib diisi");
+      return;
+    }
+
+    startTransition(async () => {
+      const res = await fetch(`/api/admin/sarana-dana/${itemId}/transactions/${transaction.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          tanggal,
+          tipe: isPersembahan ? "masuk" : tipe,
+          jumlah,
+          keterangan,
+        }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        toast.error(data?.error ?? "Gagal menyimpan transaksi");
+        return;
+      }
+
+      toast.success("Transaksi tersimpan");
+      setOpen(false);
+      router.refresh();
+    });
+  }
+
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        setOpen(next);
+        if (next) {
+          setTanggal(transaction.tanggal);
+          setTipe(transaction.tipe);
+          setJumlah(String(transaction.jumlah));
+          setKeterangan(transaction.keterangan ?? "");
+        }
+      }}
+    >
+      <DialogTrigger render={<Button size="sm" variant="outline" />}>Edit</DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Edit Transaksi</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="edit-tanggal">Tanggal</Label>
+            <Input
+              id="edit-tanggal"
+              type="date"
+              value={tanggal}
+              onChange={(e) => setTanggal(e.target.value)}
+              disabled={isPending}
+            />
+          </div>
+          {isPersembahan ? (
+            <div className="space-y-2">
+              <Label>Tipe</Label>
+              <p className="text-sm text-muted-foreground">Pemasukan (tetap)</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <Label>Tipe</Label>
+              <Select
+                value={tipe}
+                onValueChange={(v) => v && setTipe(v as SaranaDanaTransactionType)}
+                items={{ masuk: "Pemasukan", keluar: "Pengeluaran" }}
+                disabled={isPending}
+              >
+                <SelectTrigger className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="masuk">Pemasukan</SelectItem>
+                  <SelectItem value="keluar">Pengeluaran</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+          <div className="space-y-2">
+            <Label htmlFor="edit-jumlah">Jumlah</Label>
+            <Input
+              id="edit-jumlah"
+              inputMode="numeric"
+              value={formatThousands(jumlah)}
+              onChange={(e) => setJumlah(parseThousands(e.target.value))}
+              disabled={isPending}
+              placeholder="0"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="edit-keterangan">Keterangan</Label>
+            <Input
+              id="edit-keterangan"
+              value={keterangan}
+              onChange={(e) => setKeterangan(e.target.value)}
+              disabled={isPending}
+              placeholder="Keterangan"
+            />
+          </div>
+          <DialogFooter>
+            <Button onClick={onSave} disabled={isPending}>
+              {isPending ? "Menyimpan..." : "Simpan"}
+            </Button>
+          </DialogFooter>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function TransactionRow({
   itemId,
+  itemKey,
   transaction,
   disabled,
 }: {
   itemId: string;
+  itemKey: string;
   transaction: SaranaDanaTransactionWithJemaat;
   disabled?: boolean;
 }) {
@@ -80,11 +216,16 @@ function TransactionRow({
       </TableCell>
       <TableCell>{transaction.jemaat?.nama ?? "-"}</TableCell>
       <TableCell>{transaction.keterangan ?? "-"}</TableCell>
-      <TableCell>
+      <TableCell className="space-x-2 whitespace-nowrap">
         {!disabled && (
-          <Button size="sm" variant="ghost" onClick={onDelete} disabled={isPending}>
-            Hapus
-          </Button>
+          <>
+            <EditTransactionDialog itemId={itemId} itemKey={itemKey} transaction={transaction} />
+            <ConfirmDeleteButton
+              onConfirm={onDelete}
+              isPending={isPending}
+              title={`Hapus transaksi ${formatRupiah(transaction.jumlah)} pada ${transaction.tanggal}?`}
+            />
+          </>
         )}
       </TableCell>
     </TableRow>
@@ -263,7 +404,7 @@ export function SaranaDanaLedger({
         </TableHeader>
         <TableBody>
           {transactions.map((t) => (
-            <TransactionRow key={t.id} itemId={itemId} transaction={t} disabled={disabled} />
+            <TransactionRow key={t.id} itemId={itemId} itemKey={itemKey} transaction={t} disabled={disabled} />
           ))}
           {transactions.length === 0 && (
             <TableRow>

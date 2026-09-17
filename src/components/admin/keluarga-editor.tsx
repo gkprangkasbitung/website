@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
+import { ConfirmDeleteButton } from "@/components/admin/confirm-delete-button";
 import { SortableTableHead } from "@/components/admin/sortable-table-head";
 import { Button } from "@/components/ui/button";
 import {
@@ -86,7 +87,40 @@ export function AddKeluargaDialog() {
   );
 }
 
-function KeluargaRow({ item }: { item: KeluargaRow }) {
+function DeleteKeluargaRowButton({ item }: { item: KeluargaRow }) {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+
+  function onDelete() {
+    startTransition(async () => {
+      const res = await fetch(`/api/admin/keluarga/${item.id}`, { method: "DELETE" });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        toast.error(data?.error ?? "Gagal menghapus keluarga");
+        return;
+      }
+
+      toast.success("Keluarga dihapus");
+      router.refresh();
+    });
+  }
+
+  return (
+    <ConfirmDeleteButton
+      onConfirm={onDelete}
+      isPending={isPending}
+      title={`Hapus keluarga "${item.nama}"?`}
+      description={
+        item.members.length > 0
+          ? "Anggota yang masih tercatat di keluarga ini akan dilepas (tidak ikut terhapus), dan hubungan keluarganya dikosongkan. Tindakan ini tidak bisa dibatalkan."
+          : "Tindakan ini tidak bisa dibatalkan."
+      }
+    />
+  );
+}
+
+function KeluargaRow({ item, disabled }: { item: KeluargaRow; disabled?: boolean }) {
   return (
     <TableRow>
       <TableCell className="font-medium">{item.nama}</TableCell>
@@ -94,22 +128,23 @@ function KeluargaRow({ item }: { item: KeluargaRow }) {
       <TableCell className="max-w-xs truncate text-muted-foreground">
         {item.members.length > 0 ? item.members.join(", ") : "-"}
       </TableCell>
-      <TableCell className="text-right">
+      <TableCell className="space-x-2 whitespace-nowrap text-right">
         <Button
           size="sm"
-          variant="link"
-          className="h-auto p-0"
+          variant={disabled ? "link" : "outline"}
+          className={disabled ? "h-auto p-0" : undefined}
           render={<Link href={`/admin/keluarga/${item.id}`} />}
           nativeButton={false}
         >
-          Detail
+          {disabled ? "Lihat" : "Edit"}
         </Button>
+        {!disabled && <DeleteKeluargaRowButton item={item} />}
       </TableCell>
     </TableRow>
   );
 }
 
-export function KeluargaEditor({ items }: { items: KeluargaRow[] }) {
+export function KeluargaEditor({ items, disabled }: { items: KeluargaRow[]; disabled?: boolean }) {
   return (
     <div className="overflow-hidden rounded-lg border">
       <Table>
@@ -123,7 +158,7 @@ export function KeluargaEditor({ items }: { items: KeluargaRow[] }) {
         </TableHeader>
         <TableBody className="[&>tr:nth-child(even)]:bg-muted/40">
           {items.map((item) => (
-            <KeluargaRow key={item.id} item={item} />
+            <KeluargaRow key={item.id} item={item} disabled={disabled} />
           ))}
           {items.length === 0 && (
             <TableRow>

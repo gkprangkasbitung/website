@@ -8,17 +8,7 @@ import { parsePageSize } from "@/lib/pagination";
 import { getAuthenticatedUser, hasPermission, requirePermission } from "@/lib/rbac/dal";
 import { parseSortDir } from "@/lib/sort";
 import { createClient } from "@/lib/supabase/server";
-import { STATUS_KEANGGOTAAN_OPTIONS, type JemaatCatatanPastoral, type JemaatProfile, type KeluargaMember } from "@/types/warta";
-
-function groupBy<T, K extends string>(rows: T[], key: (row: T) => K | null): Record<K, T[]> {
-  const out = {} as Record<K, T[]>;
-  for (const row of rows) {
-    const k = key(row);
-    if (k === null) continue;
-    (out[k] ??= []).push(row);
-  }
-  return out;
-}
+import { STATUS_KEANGGOTAAN_OPTIONS, type JemaatProfile } from "@/types/warta";
 
 export default async function JemaatPage({
   searchParams,
@@ -54,38 +44,19 @@ export default async function JemaatPage({
     { data: jemaat, count },
     { data: allLabels },
     { data: allWilayah },
+    { data: allKeluarga },
     { count: totalJiwa },
     { count: totalKeluarga },
   ] = await Promise.all([
     jemaatQuery.order("nama", { ascending: sortDir === "asc" }).range(rangeFrom, rangeTo),
     supabase.from("label_jemaat").select("*").order("sort_order"),
     supabase.from("wilayah").select("*").order("sort_order"),
+    supabase.from("keluarga").select("id, nama").order("nama"),
     supabase.from("jemaat").select("id", { count: "exact", head: true }),
     supabase.from("keluarga").select("id", { count: "exact", head: true }),
   ]);
 
   const items = flattenJemaatLabels(jemaat ?? []) as JemaatProfile[];
-  const jemaatIds = items.map((i) => i.id);
-  const keluargaIds = [...new Set(items.map((i) => i.keluarga_id).filter((id): id is string => Boolean(id)))];
-
-  const [{ data: catatanRows }, { data: familyRows }] = await Promise.all([
-    jemaatIds.length
-      ? supabase
-          .from("jemaat_catatan_pastoral")
-          .select("*")
-          .in("jemaat_id", jemaatIds)
-          .order("tanggal", { ascending: false })
-      : Promise.resolve({ data: [] as JemaatCatatanPastoral[] }),
-    keluargaIds.length
-      ? supabase
-          .from("jemaat")
-          .select("id, nama, keluarga_id, hubungan_keluarga, status_keanggotaan")
-          .in("keluarga_id", keluargaIds)
-      : Promise.resolve({ data: [] as (KeluargaMember & { keluarga_id: string | null })[] }),
-  ]);
-
-  const notesByJemaat = groupBy(catatanRows ?? [], (n) => n.jemaat_id);
-  const familyByKeluarga = groupBy(familyRows ?? [], (m) => m.keluarga_id);
 
   return (
     <div className="space-y-6">
@@ -98,7 +69,13 @@ export default async function JemaatPage({
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <TableSearchInput placeholder="Cari nama..." />
-          {canEdit && <AddJemaatDialog allLabels={allLabels ?? []} allWilayah={allWilayah ?? []} />}
+          {canEdit && (
+            <AddJemaatDialog
+              allLabels={allLabels ?? []}
+              allWilayah={allWilayah ?? []}
+              allKeluarga={allKeluarga ?? []}
+            />
+          )}
         </div>
       </div>
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -116,14 +93,7 @@ export default async function JemaatPage({
         </div>
         <ExportCsvButton />
       </div>
-      <JemaatEditor
-        items={items}
-        allLabels={allLabels ?? []}
-        allWilayah={allWilayah ?? []}
-        familyByKeluarga={familyByKeluarga}
-        notesByJemaat={notesByJemaat}
-        disabled={!canEdit}
-      />
+      <JemaatEditor items={items} disabled={!canEdit} />
       <PaginationBar page={page} pageSize={pageSize} totalItems={count ?? 0} entryLabel="jiwa" />
     </div>
   );
