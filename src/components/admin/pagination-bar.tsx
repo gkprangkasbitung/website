@@ -17,12 +17,18 @@ export function PaginationBar({
   pageSize,
   totalItems,
   entryLabel = "data",
+  pageParam = "page",
+  pageSizeParam = "pageSize",
 }: {
   page: number;
   pageSize: number;
   totalItems: number;
   /** Plural noun shown in "Menampilkan x-y dari z {entryLabel}". */
   entryLabel?: string;
+  /** Query param names - override when a page has more than one paginated
+   * table, so each gets its own independent page/pageSize state. */
+  pageParam?: string;
+  pageSizeParam?: string;
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -31,8 +37,8 @@ export function PaginationBar({
 
   function go(nextPage: number, nextPageSize: number = pageSize) {
     const params = new URLSearchParams(searchParams.toString());
-    params.set("page", String(Math.min(Math.max(1, nextPage), totalPages)));
-    params.set("pageSize", String(nextPageSize));
+    params.set(pageParam, String(Math.min(Math.max(1, nextPage), totalPages)));
+    params.set(pageSizeParam, String(nextPageSize));
     router.push(`${pathname}?${params.toString()}`);
   }
 

@@ -1,8 +1,14 @@
 import { notFound } from "next/navigation";
+import { addDaysIso, formatTanggalPendek } from "@/lib/date";
 import { formatRupiah } from "@/lib/format";
 import { PERIBADAHAN_ITEM_SELECT } from "@/lib/peribadahan";
+import { buildSaranaDanaWeeklyReport } from "@/lib/sarana-dana";
 import { createClient } from "@/lib/supabase/server";
-import { SMKA_KELOMPOK_OPTIONS, type PeribadahanItemWithRelations } from "@/types/warta";
+import {
+  SMKA_KELOMPOK_OPTIONS,
+  type PeribadahanItemWithRelations,
+  type SaranaDanaWeeklyReport,
+} from "@/types/warta";
 
 /** Only shows whichever fields are actually filled in for this item -
  * which fields that is depends on its category (see peribadahan-editor.tsx
@@ -79,6 +85,35 @@ function PeribadahanItemCard({ item }: { item: PeribadahanItemWithRelations }) {
   );
 }
 
+function SaranaDanaWeeklyReportList({ report }: { report: SaranaDanaWeeklyReport[] }) {
+  return (
+    <ul className="space-y-3">
+      {report.map((item) => (
+        <li key={item.id} className="space-y-1 border-b pb-3 last:border-0">
+          <div className="flex justify-between">
+            <span className="font-medium">{item.name}</span>
+            <span className="font-medium">{formatRupiah(item.saldoAkhir)}</span>
+          </div>
+          <dl className="grid grid-cols-3 gap-x-4 text-sm text-muted-foreground">
+            <div>
+              <dt>Saldo Awal</dt>
+              <dd>{formatRupiah(item.saldoAwal)}</dd>
+            </div>
+            <div>
+              <dt>Pemasukan</dt>
+              <dd>{formatRupiah(item.pemasukan)}</dd>
+            </div>
+            <div>
+              <dt>Pengeluaran</dt>
+              <dd>{formatRupiah(item.pengeluaran)}</dd>
+            </div>
+          </dl>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 function LitbangList({
   items,
 }: {
@@ -115,17 +150,37 @@ export default async function PublicWartaDetailPage({
     notFound();
   }
 
-  const [{ data: peribadahanItems }, { data: saranaDana }, { data: litbangItems }, { data: kesaksianItems }] =
-    await Promise.all([
-      supabase
-        .from("peribadahan_items")
-        .select(PERIBADAHAN_ITEM_SELECT)
-        .eq("tanggal", warta.tanggal_kebaktian)
-        .order("sort_order"),
-      supabase.from("sarana_dana_balances").select("*").order("key"),
-      supabase.from("warta_litbang_items").select("*").eq("warta_id", warta.id).order("sort_order"),
-      supabase.from("warta_kesaksian_items").select("*").eq("warta_id", warta.id).order("sort_order"),
-    ]);
+  const peribadahanFrom = warta.tanggal_kebaktian;
+  const peribadahanTo = addDaysIso(warta.tanggal_kebaktian, 6);
+  const saranaDanaFrom = addDaysIso(warta.tanggal_kebaktian, -7);
+  const saranaDanaTo = addDaysIso(warta.tanggal_kebaktian, -1);
+
+  const [
+    { data: peribadahanItems },
+    { data: saranaDanaItems },
+    { data: saranaDanaTransactions },
+    { data: litbangItems },
+    { data: kesaksianItems },
+  ] = await Promise.all([
+    supabase
+      .from("peribadahan_items")
+      .select(PERIBADAHAN_ITEM_SELECT)
+      .gte("tanggal", peribadahanFrom)
+      .lte("tanggal", peribadahanTo)
+      .order("tanggal")
+      .order("sort_order"),
+    supabase.from("sarana_dana_items").select("*").order("key"),
+    supabase.from("sarana_dana_transactions").select("*").lte("tanggal", saranaDanaTo),
+    supabase.from("warta_litbang_items").select("*").eq("warta_id", warta.id).order("sort_order"),
+    supabase.from("warta_kesaksian_items").select("*").eq("warta_id", warta.id).order("sort_order"),
+  ]);
+
+  const saranaDanaReport = buildSaranaDanaWeeklyReport(
+    saranaDanaItems ?? [],
+    saranaDanaTransactions ?? [],
+    saranaDanaFrom,
+    saranaDanaTo,
+  );
 
   return (
     <div className="mx-auto max-w-3xl space-y-10 px-4 py-16">
@@ -149,6 +204,9 @@ export default async function PublicWartaDetailPage({
 
       <section className="space-y-2">
         <h2 className="text-xl font-semibold">Bidang Peribadahan</h2>
+        <p className="text-sm text-muted-foreground">
+          {formatTanggalPendek(peribadahanFrom)} - {formatTanggalPendek(peribadahanTo)}
+        </p>
         <div>
           {(peribadahanItems ?? []).map((item) => (
             <PeribadahanItemCard key={item.id} item={item} />
@@ -165,14 +223,10 @@ export default async function PublicWartaDetailPage({
 
       <section className="space-y-2">
         <h2 className="text-xl font-semibold">Bidang Sarana dan Dana</h2>
-        <ul className="space-y-1">
-          {(saranaDana ?? []).map((item) => (
-            <li key={item.id} className="flex justify-between border-b py-1 text-sm">
-              <span>{item.name}</span>
-              <span className="font-medium">{formatRupiah(item.saldo)}</span>
-            </li>
-          ))}
-        </ul>
+        <p className="text-sm text-muted-foreground">
+          {formatTanggalPendek(saranaDanaFrom)} - {formatTanggalPendek(saranaDanaTo)}
+        </p>
+        <SaranaDanaWeeklyReportList report={saranaDanaReport} />
       </section>
 
       {(kesaksianItems ?? []).length > 0 && (

@@ -239,6 +239,18 @@ export interface SaranaDanaBalance {
   saldo: number;
 }
 
+/** Per-item financial report for one date range - see buildSaranaDanaWeeklyReport. */
+export interface SaranaDanaWeeklyReport {
+  id: string;
+  key: string;
+  name: string;
+  keterangan: string | null;
+  saldoAwal: number;
+  pemasukan: number;
+  pengeluaran: number;
+  saldoAkhir: number;
+}
+
 export interface WartaKesaksianItem {
   id: string;
   warta_id: string;
