@@ -1,11 +1,27 @@
 "use client";
 
+import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
 import { toast } from "sonner";
+import { flexRender, type ColumnFiltersState, type PaginationState, type SortingState } from "@tanstack/react-table";
+import {
+  getCoreRowModel,
+  getFacetedRowModel,
+  getFacetedUniqueValues,
+  getFilteredRowModel,
+  getPaginationRowModel,
+  getSortedRowModel,
+  useLegacyTable,
+  type LegacyColumnDef,
+} from "@tanstack/react-table/legacy";
+import { RotateCcw } from "lucide-react";
+import { cn } from "cn";
 import { ConfirmDeleteButton } from "@/components/admin/confirm-delete-button";
+import { FacetedFilter, SearchHeader, SortHeader } from "@/components/admin/data-table-controls";
 import { JemaatSelect } from "@/components/admin/jemaat-select";
-import { SortableTableHead } from "@/components/admin/sortable-table-head";
+import { PaginationBar } from "@/components/admin/pagination-bar";
+import { RowActionsMenu } from "@/components/admin/row-actions-menu";
+import { TableEmptyState } from "@/components/admin/table-empty-state";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -15,6 +31,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { formatTanggalPanjang, nextSundayIso } from "@/lib/date";
@@ -740,7 +757,17 @@ function getCategoryColumns(key: string | undefined, config: FieldConfig): Categ
   return columns;
 }
 
-function DeletePeribadahanRowButton({ itemId, title }: { itemId: string; title: string }) {
+function DeletePeribadahanRowButton({
+  itemId,
+  title,
+  open,
+  onOpenChange,
+}: {
+  itemId: string;
+  title: string;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
@@ -759,7 +786,15 @@ function DeletePeribadahanRowButton({ itemId, title }: { itemId: string; title: 
     });
   }
 
-  return <ConfirmDeleteButton onConfirm={onDelete} isPending={isPending} title={`Hapus "${title}"?`} />;
+  return (
+    <ConfirmDeleteButton
+      open={open}
+      onOpenChange={onOpenChange}
+      onConfirm={onDelete}
+      isPending={isPending}
+      title={`Hapus "${title}"?`}
+    />
+  );
 }
 
 function ItemRow({
@@ -781,7 +816,8 @@ function ItemRow({
   jemaatList: JemaatWithLabels[];
   disabled?: boolean;
 }) {
-  const [open, setOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const key = item.category?.key;
   const isSmka = key === "smka";
   const config = (key && FIELD_CONFIG[key]) || FALLBACK_FIELD_CONFIG;
@@ -790,9 +826,9 @@ function ItemRow({
     .join(" · ");
 
   return (
-    <TableRow>
-      <TableCell className="whitespace-nowrap">{formatTanggalPanjang(item.tanggal)}</TableCell>
-      <TableCell className="whitespace-nowrap">{item.jam ?? "-"}</TableCell>
+    <TableRow className="group/row">
+      <TableCell className="text-right whitespace-nowrap tabular-nums">{formatTanggalPanjang(item.tanggal)}</TableCell>
+      <TableCell className="text-right whitespace-nowrap tabular-nums">{item.jam ?? "-"}</TableCell>
       {showCategory && <TableCell>{item.category?.name ?? "-"}</TableCell>}
       {categoryColumns ? (
         categoryColumns.map((col) => (
@@ -803,33 +839,430 @@ function ItemRow({
       ) : (
         <TableCell className="max-w-64 truncate">{summarize(item)}</TableCell>
       )}
-      <TableCell className="space-x-2 whitespace-nowrap">
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger render={<Button size="sm" variant="outline" />}>
-            {disabled ? "Lihat" : "Edit"}
-          </DialogTrigger>
-          <DialogContent className="max-h-[85vh] max-w-2xl overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>{dialogTitle}</DialogTitle>
-            </DialogHeader>
-            {isSmka ? (
-              <SmkaItemCard item={item} bare jemaatList={jemaatList} disabled={disabled} />
-            ) : (
-              <ItemCard
-                item={item}
-                config={config}
-                bare
-                tempatList={tempatList}
-                wilayahList={wilayahList}
-                jemaatList={jemaatList}
-                disabled={disabled}
-              />
-            )}
-          </DialogContent>
-        </Dialog>
-        {!disabled && <DeletePeribadahanRowButton itemId={item.id} title={dialogTitle} />}
+      <TableCell className="text-right">
+        <RowActionsMenu>
+          <DropdownMenuItem onClick={() => setEditOpen(true)}>{disabled ? "Lihat" : "Edit"}</DropdownMenuItem>
+          {!disabled && (
+            <DropdownMenuItem variant="destructive" onClick={() => setConfirmOpen(true)}>
+              Hapus
+            </DropdownMenuItem>
+          )}
+        </RowActionsMenu>
       </TableCell>
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent className="max-h-[85vh] max-w-2xl overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{dialogTitle}</DialogTitle>
+          </DialogHeader>
+          {isSmka ? (
+            <SmkaItemCard item={item} bare jemaatList={jemaatList} disabled={disabled} />
+          ) : (
+            <ItemCard
+              item={item}
+              config={config}
+              bare
+              tempatList={tempatList}
+              wilayahList={wilayahList}
+              jemaatList={jemaatList}
+              disabled={disabled}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+      {!disabled && (
+        <DeletePeribadahanRowButton
+          itemId={item.id}
+          title={dialogTitle}
+          open={confirmOpen}
+          onOpenChange={setConfirmOpen}
+        />
+      )}
     </TableRow>
+  );
+}
+
+/** The actions cell for the sortable/standalone-pages table - same Edit/Hapus
+ * behavior as ItemRow above, just wired in as a TanStack cell renderer
+ * instead of a hand-written <TableCell>. */
+function ActionsCell({
+  item,
+  tempatList,
+  wilayahList,
+  jemaatList,
+  disabled,
+}: {
+  item: PeribadahanItemWithRelations;
+  tempatList: Tempat[];
+  wilayahList: Wilayah[];
+  jemaatList: JemaatWithLabels[];
+  disabled?: boolean;
+}) {
+  const [editOpen, setEditOpen] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const key = item.category?.key;
+  const isSmka = key === "smka";
+  const config = (key && FIELD_CONFIG[key]) || FALLBACK_FIELD_CONFIG;
+  const dialogTitle = [item.category?.name, formatTanggalPanjang(item.tanggal)].filter(Boolean).join(" · ");
+
+  return (
+    <>
+      <RowActionsMenu>
+        <DropdownMenuItem onClick={() => setEditOpen(true)}>{disabled ? "Lihat" : "Edit"}</DropdownMenuItem>
+        {!disabled && (
+          <DropdownMenuItem variant="destructive" onClick={() => setConfirmOpen(true)}>
+            Hapus
+          </DropdownMenuItem>
+        )}
+      </RowActionsMenu>
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent className="max-h-[85vh] max-w-2xl overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{dialogTitle}</DialogTitle>
+          </DialogHeader>
+          {isSmka ? (
+            <SmkaItemCard item={item} bare jemaatList={jemaatList} disabled={disabled} />
+          ) : (
+            <ItemCard
+              item={item}
+              config={config}
+              bare
+              tempatList={tempatList}
+              wilayahList={wilayahList}
+              jemaatList={jemaatList}
+              disabled={disabled}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+      {!disabled && (
+        <DeletePeribadahanRowButton
+          itemId={item.id}
+          title={dialogTitle}
+          open={confirmOpen}
+          onOpenChange={setConfirmOpen}
+        />
+      )}
+    </>
+  );
+}
+
+/** Columns whose values read as a date/time or are the actions trigger -
+ * right-aligned, matching CLAUDE.md's numeric/date alignment rule. */
+const ALIGN_RIGHT_COLUMNS = new Set(["tanggal", "jam", "actions"]);
+
+/** Builds the sortable table's column set from the same FIELD_CONFIG the
+ * plain (non-sortable) path already uses via getCategoryColumns - just
+ * re-expressed as typed TanStack columns instead of {label, render} pairs.
+ * Tempat/Wilayah get a toolbar facet whenever that field applies; every
+ * other text field gets a per-column search popover; only Tanggal/Waktu are
+ * sortable (matching the plain path's historical SORT_COLUMNS). In overview
+ * mode (no locked category), Tempat/Wilayah are still defined as
+ * filter-only columns - `hiddenColumnIds` - so the toolbar facets work
+ * across every category even though the visible column there is the single
+ * combined "Ringkasan" summary. */
+function buildSortableColumns({
+  showCategory,
+  categoryKey,
+  config,
+  tempatList,
+  wilayahList,
+  jemaatList,
+  disabled,
+}: {
+  showCategory: boolean;
+  categoryKey: string | undefined;
+  config: FieldConfig;
+  tempatList: Tempat[];
+  wilayahList: Wilayah[];
+  jemaatList: JemaatWithLabels[];
+  disabled?: boolean;
+}): { columns: LegacyColumnDef<PeribadahanItemWithRelations>[]; hiddenColumnIds: string[] } {
+  const columns: LegacyColumnDef<PeribadahanItemWithRelations>[] = [
+    {
+      id: "tanggal",
+      accessorFn: (item) => item.tanggal,
+      header: ({ column }) => <SortHeader column={column} label="Tanggal" align="right" />,
+      cell: ({ getValue }) => formatTanggalPanjang(getValue() as string),
+    },
+    {
+      id: "jam",
+      accessorFn: (item) => item.jam ?? "-",
+      header: ({ column }) => <SortHeader column={column} label="Waktu" align="right" />,
+    },
+  ];
+
+  const hiddenColumnIds: string[] = [];
+
+  if (showCategory) {
+    columns.push({
+      id: "jenis",
+      accessorFn: (item) => item.category?.name ?? "-",
+      header: ({ column }) => <SearchHeader column={column} label="Jenis" />,
+      filterFn: "includesString",
+    });
+    columns.push({
+      id: "tempat",
+      accessorFn: (item) => item.tempat?.nama ?? "",
+      filterFn: "arrHas",
+    });
+    columns.push({
+      id: "wilayah",
+      accessorFn: (item) => item.wilayah?.nama ?? "",
+      filterFn: "arrHas",
+    });
+    hiddenColumnIds.push("tempat", "wilayah");
+    columns.push({
+      id: "ringkasan",
+      accessorFn: (item) => summarize(item),
+      header: ({ column }) => <SearchHeader column={column} label="Ringkasan" />,
+      filterFn: "includesString",
+    });
+  } else if (categoryKey === "smka") {
+    columns.push(
+      {
+        id: "tema",
+        accessorFn: (item) => item.tema ?? "-",
+        header: ({ column }) => <SearchHeader column={column} label="Tema" />,
+        filterFn: "includesString",
+      },
+      {
+        id: "liturgos",
+        accessorFn: (item) => item.liturgos?.nama ?? "-",
+        header: ({ column }) => <SearchHeader column={column} label="Liturgos" />,
+        filterFn: "includesString",
+      },
+      {
+        id: "pemusik",
+        accessorFn: (item) => item.pemusik?.nama ?? "-",
+        header: ({ column }) => <SearchHeader column={column} label="Pemusik" />,
+        filterFn: "includesString",
+      },
+      {
+        id: "bahanAlkitab",
+        accessorFn: (item) => item.bahan_alkitab ?? "-",
+        header: ({ column }) => <SearchHeader column={column} label="Bahan Alkitab" />,
+        filterFn: "includesString",
+      },
+    );
+  } else {
+    if (config.tempat) {
+      columns.push({
+        id: "tempat",
+        accessorFn: (item) => item.tempat?.nama ?? "-",
+        header: "Tempat",
+        filterFn: "arrHas",
+      });
+    }
+    if (config.wilayah) {
+      columns.push({
+        id: "wilayah",
+        accessorFn: (item) => item.wilayah?.nama ?? "-",
+        header: "Wilayah",
+        filterFn: "arrHas",
+      });
+    }
+    if (config.dpa) {
+      columns.push({
+        id: "dpa",
+        accessorFn: (item) => item.dpa ?? "-",
+        header: ({ column }) => <SearchHeader column={column} label="DPA" />,
+        filterFn: "includesString",
+      });
+    }
+    if (config.tema) {
+      columns.push({
+        id: "tema",
+        accessorFn: (item) => item.tema ?? "-",
+        header: ({ column }) => <SearchHeader column={column} label="Tema" />,
+        filterFn: "includesString",
+      });
+    }
+    if (config.pelayanFirman) {
+      columns.push({
+        id: "pelayanFirman",
+        accessorFn: (item) => item.pelayan_firman?.nama ?? "-",
+        header: ({ column }) => <SearchHeader column={column} label="Pelayan Firman" />,
+        filterFn: "includesString",
+      });
+    }
+    if (config.liturgos) {
+      columns.push({
+        id: "liturgos",
+        accessorFn: (item) => item.liturgos?.nama ?? "-",
+        header: ({ column }) => <SearchHeader column={column} label="Liturgos" />,
+        filterFn: "includesString",
+      });
+    }
+  }
+
+  columns.push({
+    id: "actions",
+    header: "",
+    cell: ({ row }) => (
+      <ActionsCell
+        item={row.original}
+        tempatList={tempatList}
+        wilayahList={wilayahList}
+        jemaatList={jemaatList}
+        disabled={disabled}
+      />
+    ),
+  });
+
+  return { columns, hiddenColumnIds };
+}
+
+/** The sortable, filterable table used by the standalone Peribadahan pages
+ * (spans many dates - sorting/faceting is meaningful there). Fetches all
+ * matching rows server-side (see peribadahan/page.tsx) and does sort,
+ * filter, and pagination entirely client-side via TanStack, so the
+ * Wilayah/Tempat facets and per-column search see the whole result set. */
+function SortablePeribadahanTable({
+  items,
+  categories,
+  lockedCategoryId,
+  tempatList,
+  wilayahList,
+  jemaatList,
+  disabled,
+}: {
+  items: PeribadahanItemWithRelations[];
+  categories: PeribadahanCategory[];
+  lockedCategoryId?: string;
+  tempatList: Tempat[];
+  wilayahList: Wilayah[];
+  jemaatList: JemaatWithLabels[];
+  disabled?: boolean;
+}) {
+  const showCategory = !lockedCategoryId;
+  const lockedCategory = lockedCategoryId ? categories.find((c) => c.id === lockedCategoryId) : undefined;
+  const lockedConfig = (lockedCategory?.key && FIELD_CONFIG[lockedCategory.key]) || FALLBACK_FIELD_CONFIG;
+
+  const [sorting, setSorting] = useState<SortingState>([]);
+  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
+  const [pagination, setPagination] = useState<PaginationState>({ pageIndex: 0, pageSize: 10 });
+
+  const { columns, hiddenColumnIds } = useMemo(
+    () =>
+      buildSortableColumns({
+        showCategory,
+        categoryKey: lockedCategory?.key,
+        config: lockedConfig,
+        tempatList,
+        wilayahList,
+        jemaatList,
+        disabled,
+      }),
+    [showCategory, lockedCategory?.key, lockedConfig, tempatList, wilayahList, jemaatList, disabled],
+  );
+  const renderColumns = useMemo(() => columns.filter((c) => !hiddenColumnIds.includes(c.id!)), [columns, hiddenColumnIds]);
+
+  const table = useLegacyTable({
+    data: items,
+    columns,
+    state: { sorting, columnFilters, pagination },
+    onSortingChange: setSorting,
+    onColumnFiltersChange: setColumnFilters,
+    onPaginationChange: setPagination,
+    getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    getFacetedRowModel: getFacetedRowModel(),
+    getFacetedUniqueValues: getFacetedUniqueValues(),
+    getPaginationRowModel: getPaginationRowModel(),
+  });
+
+  const hasFilters = columnFilters.length > 0;
+  const rows = table.getRowModel().rows;
+  const totalFiltered = table.getFilteredRowModel().rows.length;
+  const tempatColumn = table.getColumn("tempat");
+  const wilayahColumn = table.getColumn("wilayah");
+
+  return (
+    <div className="space-y-4">
+      {!disabled && (
+        <div className="flex justify-end">
+          <AddItemDialog categories={categories} lockedCategoryId={lockedCategoryId} />
+        </div>
+      )}
+
+      <div className="flex flex-wrap items-center gap-2">
+        {wilayahColumn && <FacetedFilter column={wilayahColumn} title="Wilayah" />}
+        {tempatColumn && <FacetedFilter column={tempatColumn} title="Tempat" />}
+        {hasFilters && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="gap-1.5 text-muted-foreground hover:text-foreground"
+            onClick={() => table.resetColumnFilters()}
+          >
+            <RotateCcw className="size-3.5" />
+            Reset
+          </Button>
+        )}
+      </div>
+
+      <Table>
+        <TableHeader>
+          <TableRow className="hover:bg-transparent">
+            {table
+              .getFlatHeaders()
+              .filter((header) => !hiddenColumnIds.includes(header.column.id))
+              .map((header) => (
+                <TableHead key={header.id} className={cn(ALIGN_RIGHT_COLUMNS.has(header.column.id) && "text-right")}>
+                  {flexRender(header.column.columnDef.header, header.getContext())}
+                </TableHead>
+              ))}
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {rows.map((row) => (
+            <TableRow key={row.id} className="group/row">
+              {row
+                .getVisibleCells()
+                .filter((cell) => !hiddenColumnIds.includes(cell.column.id))
+                .map((cell) => (
+                  <TableCell
+                    key={cell.id}
+                    className={cn(
+                      ALIGN_RIGHT_COLUMNS.has(cell.column.id) && "text-right",
+                      cell.column.id === "tanggal" || cell.column.id === "jam" ? "tabular-nums" : undefined,
+                      cell.column.id !== "actions" && "max-w-64 truncate",
+                    )}
+                  >
+                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                  </TableCell>
+                ))}
+            </TableRow>
+          ))}
+          {rows.length === 0 && (
+            <TableEmptyState
+              colSpan={renderColumns.length}
+              action={
+                hasFilters ? (
+                  <Button variant="ghost" size="sm" onClick={() => table.resetColumnFilters()}>
+                    Reset filter
+                  </Button>
+                ) : (
+                  !disabled && <AddItemDialog categories={categories} lockedCategoryId={lockedCategoryId} />
+                )
+              }
+            >
+              {hasFilters ? "Tidak ada jadwal yang cocok dengan filter ini." : "Belum ada jadwal."}
+            </TableEmptyState>
+          )}
+        </TableBody>
+      </Table>
+
+      <PaginationBar
+        page={pagination.pageIndex + 1}
+        pageSize={pagination.pageSize}
+        totalItems={totalFiltered}
+        entryLabel="jadwal"
+        onPageChange={(page) => setPagination((p) => ({ ...p, pageIndex: page - 1 }))}
+        onPageSizeChange={(pageSize) => setPagination((p) => ({ ...p, pageSize, pageIndex: 0 }))}
+      />
+    </div>
   );
 }
 
@@ -858,11 +1291,24 @@ export function PeribadahanEditor({
   jemaatList: JemaatWithLabels[];
   disabled?: boolean;
 }) {
-  const showCategory = !lockedCategoryId;
-  /** Sorting is only meaningful across many dates - inside a warta (fixed
-   * tanggal) every row already shares the same date. */
-  const sortable = !tanggal;
+  /** Sorting/filtering is only meaningful across many dates - inside a
+   * warta (fixed tanggal) every row already shares the same date, so that
+   * embedded view keeps its plain, non-interactive table. */
+  if (!tanggal) {
+    return (
+      <SortablePeribadahanTable
+        items={items}
+        categories={categories}
+        lockedCategoryId={lockedCategoryId}
+        tempatList={tempatList}
+        wilayahList={wilayahList}
+        jemaatList={jemaatList}
+        disabled={disabled}
+      />
+    );
+  }
 
+  const showCategory = !lockedCategoryId;
   const lockedCategory = lockedCategoryId ? categories.find((c) => c.id === lockedCategoryId) : undefined;
   const lockedConfig = (lockedCategory?.key && FIELD_CONFIG[lockedCategory.key]) || FALLBACK_FIELD_CONFIG;
   const categoryColumns = showCategory ? null : getCategoryColumns(lockedCategory?.key, lockedConfig);
@@ -878,16 +1324,8 @@ export function PeribadahanEditor({
       <Table>
         <TableHeader>
           <TableRow>
-            {sortable ? (
-              <SortableTableHead sortKey="tanggal">Tanggal</SortableTableHead>
-            ) : (
-              <TableHead>Tanggal</TableHead>
-            )}
-            {sortable ? (
-              <SortableTableHead sortKey="jam">Waktu</SortableTableHead>
-            ) : (
-              <TableHead>Waktu</TableHead>
-            )}
+            <TableHead className="text-right">Tanggal</TableHead>
+            <TableHead className="text-right">Waktu</TableHead>
             {showCategory && <TableHead>Jenis</TableHead>}
             {categoryColumns ? (
               categoryColumns.map((col) => <TableHead key={col.label}>{col.label}</TableHead>)
@@ -911,11 +1349,16 @@ export function PeribadahanEditor({
             />
           ))}
           {items.length === 0 && (
-            <TableRow>
-              <TableCell colSpan={columnCount} className="text-sm text-muted-foreground">
-                Belum ada jadwal.
-              </TableCell>
-            </TableRow>
+            <TableEmptyState
+              colSpan={columnCount}
+              action={
+                !disabled && (
+                  <AddItemDialog tanggal={tanggal} categories={categories} lockedCategoryId={lockedCategoryId} />
+                )
+              }
+            >
+              Belum ada jadwal.
+            </TableEmptyState>
           )}
         </TableBody>
       </Table>

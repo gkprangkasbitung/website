@@ -1,44 +1,25 @@
 import { notFound } from "next/navigation";
-import { PaginationBar } from "@/components/admin/pagination-bar";
 import { PeribadahanEditor } from "@/components/admin/peribadahan-editor";
 import { TableDateRangeFilter } from "@/components/admin/table-date-range-filter";
 import { TableSearchInput } from "@/components/admin/table-search-input";
 import { JEMAAT_SELECT_WITH_LABELS, flattenJemaatLabels } from "@/lib/jemaat";
-import { parsePageSize } from "@/lib/pagination";
 import { PERIBADAHAN_ITEM_SELECT } from "@/lib/peribadahan";
 import { getAuthenticatedUser, hasPermission, requirePermission } from "@/lib/rbac/dal";
-import { parseSortDir, parseSortKey } from "@/lib/sort";
 import { createClient } from "@/lib/supabase/server";
-
-const SORT_COLUMNS = ["tanggal", "jam"] as const;
 
 export default async function PeribadahanCategoryPage({
   params,
   searchParams,
 }: {
   params: Promise<{ key: string }>;
-  searchParams: Promise<{
-    page?: string;
-    pageSize?: string;
-    sort?: string;
-    dir?: string;
-    q?: string;
-    from?: string;
-    to?: string;
-  }>;
+  searchParams: Promise<{ q?: string; from?: string; to?: string }>;
 }) {
   await requirePermission("warta", "read");
   const currentUser = await getAuthenticatedUser();
   const canEdit = hasPermission(currentUser, "warta", "update");
 
   const { key } = await params;
-  const { page: pageParam, pageSize: pageSizeParam, sort, dir, q, from, to } = await searchParams;
-  const pageSize = parsePageSize(pageSizeParam);
-  const page = Math.max(1, Number(pageParam) || 1);
-  const rangeFrom = (page - 1) * pageSize;
-  const rangeTo = rangeFrom + pageSize - 1;
-  const sortKey = parseSortKey(sort, SORT_COLUMNS) ?? "tanggal";
-  const sortDir = parseSortDir(dir);
+  const { q, from, to } = await searchParams;
 
   const supabase = await createClient();
   const { data: category } = await supabase
@@ -53,7 +34,7 @@ export default async function PeribadahanCategoryPage({
 
   let itemsQuery = supabase
     .from("peribadahan_items")
-    .select(PERIBADAHAN_ITEM_SELECT, { count: "exact" })
+    .select(PERIBADAHAN_ITEM_SELECT)
     .eq("category_id", category.id);
 
   if (q) {
@@ -64,12 +45,9 @@ export default async function PeribadahanCategoryPage({
   if (from) itemsQuery = itemsQuery.gte("tanggal", from);
   if (to) itemsQuery = itemsQuery.lte("tanggal", to);
 
-  const [{ data: items, count }, { data: tempatList }, { data: wilayahList }, { data: jemaatList }] =
+  const [{ data: items }, { data: tempatList }, { data: wilayahList }, { data: jemaatList }] =
     await Promise.all([
-      itemsQuery
-        .order(sortKey, { ascending: sortDir === "asc" })
-        .order("sort_order")
-        .range(rangeFrom, rangeTo),
+      itemsQuery.order("tanggal", { ascending: false }).order("sort_order"),
       supabase.from("tempat").select("*").order("sort_order"),
       supabase.from("wilayah").select("*").order("sort_order"),
       supabase.from("jemaat").select(JEMAAT_SELECT_WITH_LABELS).order("nama"),
@@ -101,8 +79,6 @@ export default async function PeribadahanCategoryPage({
         jemaatList={jemaatWithLabels}
         disabled={!canEdit}
       />
-
-      <PaginationBar page={page} pageSize={pageSize} totalItems={count ?? 0} entryLabel="jadwal" />
     </div>
   );
 }
