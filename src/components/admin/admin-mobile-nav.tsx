@@ -29,7 +29,7 @@ export function AdminMobileNav({
       <SheetContent side="left" className="admin-theme gap-0 border-sidebar-border bg-sidebar p-0 text-sidebar-foreground">
         <SheetHeader className="border-b border-sidebar-border">
           <SheetTitle className="flex items-center gap-2.5 text-sidebar-foreground">
-            <span className="grid size-8 shrink-0 place-items-center bg-sidebar-primary text-xs font-extrabold text-sidebar-primary-foreground">
+            <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-sidebar-primary text-xs font-extrabold text-sidebar-primary-foreground">
               GKP
             </span>
             GKP Rangkasbitung

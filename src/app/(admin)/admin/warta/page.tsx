@@ -2,14 +2,12 @@ import Link from "next/link";
 import { PaginationBar } from "@/components/admin/pagination-bar";
 import { SortableTableHead } from "@/components/admin/sortable-table-head";
 import { TableDateRangeFilter } from "@/components/admin/table-date-range-filter";
+import { TableEmptyState } from "@/components/admin/table-empty-state";
 import { TableSearchInput } from "@/components/admin/table-search-input";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { DeleteWartaRowButton } from "./delete-warta-row-button";
 import {
   Table,
   TableBody,
-  TableCell,
   TableHead,
   TableHeader,
   TableRow,
@@ -18,6 +16,7 @@ import { parsePageSize } from "@/lib/pagination";
 import { getAuthenticatedUser, hasPermission, requirePermission } from "@/lib/rbac/dal";
 import { parseSortDir, parseSortKey } from "@/lib/sort";
 import { createClient } from "@/lib/supabase/server";
+import { WartaRow } from "./warta-row";
 
 const SORT_COLUMNS = ["tanggal_kebaktian", "judul_kebaktian", "status"] as const;
 
@@ -80,7 +79,7 @@ export default async function WartaListPage({
       <Table>
         <TableHeader>
           <TableRow>
-            <SortableTableHead sortKey="tanggal_kebaktian">Tanggal</SortableTableHead>
+            <SortableTableHead sortKey="tanggal_kebaktian" align="right">Tanggal</SortableTableHead>
             <SortableTableHead sortKey="judul_kebaktian">Judul</SortableTableHead>
             <SortableTableHead sortKey="status">Status</SortableTableHead>
             <TableHead></TableHead>
@@ -88,33 +87,28 @@ export default async function WartaListPage({
         </TableHeader>
         <TableBody>
           {(wartaList ?? []).map((warta) => (
-            <TableRow key={warta.id}>
-              <TableCell>{warta.tanggal_kebaktian}</TableCell>
-              <TableCell>{warta.judul_kebaktian}</TableCell>
-              <TableCell>
-                <Badge variant={warta.status === "published" ? "default" : "secondary"}>
-                  {warta.status === "published" ? "Published" : "Draft"}
-                </Badge>
-              </TableCell>
-              <TableCell className="space-x-2 whitespace-nowrap">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  render={<Link href={`/admin/warta/${warta.id}`} />}
-                  nativeButton={false}
-                >
-                  Edit
-                </Button>
-                {canDelete && <DeleteWartaRowButton wartaId={warta.id} judul={warta.judul_kebaktian} />}
-              </TableCell>
-            </TableRow>
+            <WartaRow
+              key={warta.id}
+              wartaId={warta.id}
+              tanggal={warta.tanggal_kebaktian}
+              judul={warta.judul_kebaktian}
+              status={warta.status}
+              canDelete={canDelete}
+            />
           ))}
           {(wartaList ?? []).length === 0 && (
-            <TableRow>
-              <TableCell colSpan={4} className="text-sm text-muted-foreground">
-                Tidak ada warta yang cocok.
-              </TableCell>
-            </TableRow>
+            <TableEmptyState
+              colSpan={4}
+              action={
+                canCreate && (
+                  <Button size="sm" render={<Link href="/admin/warta/new" />} nativeButton={false}>
+                    Buat Warta Baru
+                  </Button>
+                )
+              }
+            >
+              Tidak ada warta yang cocok.
+            </TableEmptyState>
           )}
         </TableBody>
       </Table>

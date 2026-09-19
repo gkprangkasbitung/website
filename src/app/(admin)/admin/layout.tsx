@@ -35,6 +35,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         label: c.name,
       })),
     },
+    { href: "/admin/peribadahan-lengkap", label: "Peribadahan (Baru)", show: canReadWarta, children: [] },
     { href: "/admin/litbang", label: "Litbang", show: canReadWarta, children: [] },
     {
       href: "/admin/sarana-dana",
@@ -69,7 +70,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     <div className="admin-theme grid h-svh grid-cols-1 overflow-hidden bg-background text-foreground md:grid-cols-[240px_1fr]">
       <aside className="hidden h-full flex-col overflow-y-auto bg-sidebar p-4 text-sidebar-foreground md:flex">
         <div className="mb-6 flex items-center gap-2.5 px-2">
-          <span className="grid size-8 shrink-0 place-items-center bg-sidebar-primary text-xs font-extrabold text-sidebar-primary-foreground">
+          <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-sidebar-primary text-xs font-extrabold text-sidebar-primary-foreground">
             GKP
           </span>
           <span className="text-sm leading-tight font-extrabold">GKP Rangkasbitung</span>
@@ -89,7 +90,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             <ThemeToggle />
           </div>
         </header>
-        <main className="min-w-0 flex-1 overflow-y-auto p-4 md:p-6">{children}</main>
+        <main className="min-w-0 flex-1 overflow-y-auto p-6 md:p-8">{children}</main>
       </div>
     </div>
   );

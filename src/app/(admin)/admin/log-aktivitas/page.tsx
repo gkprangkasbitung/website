@@ -1,6 +1,7 @@
 import { PaginationBar } from "@/components/admin/pagination-bar";
 import { SortableTableHead } from "@/components/admin/sortable-table-head";
 import { TableDateRangeFilter } from "@/components/admin/table-date-range-filter";
+import { TableEmptyState } from "@/components/admin/table-empty-state";
 import { TableSearchInput } from "@/components/admin/table-search-input";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -80,7 +81,7 @@ export default async function ActivityLogPage({
       <Table>
         <TableHeader>
           <TableRow>
-            <SortableTableHead sortKey="created_at">Waktu</SortableTableHead>
+            <SortableTableHead sortKey="created_at" align="right">Waktu</SortableTableHead>
             <TableHead>Pengguna</TableHead>
             <SortableTableHead sortKey="module">Modul</SortableTableHead>
             <TableHead>Aktivitas</TableHead>
@@ -90,7 +91,7 @@ export default async function ActivityLogPage({
         <TableBody>
           {(logs ?? []).map((log) => (
             <TableRow key={log.id}>
-              <TableCell className="whitespace-nowrap">{formatWaktu(log.created_at)}</TableCell>
+              <TableCell className="text-right whitespace-nowrap tabular-nums">{formatWaktu(log.created_at)}</TableCell>
               <TableCell>{log.user_email ?? "-"}</TableCell>
               <TableCell>
                 <Badge variant="secondary">{moduleLabel(log.module)}</Badge>
@@ -99,13 +100,7 @@ export default async function ActivityLogPage({
               <TableCell className="whitespace-nowrap">{log.ip_address ?? "-"}</TableCell>
             </TableRow>
           ))}
-          {(logs ?? []).length === 0 && (
-            <TableRow>
-              <TableCell colSpan={5} className="text-sm text-muted-foreground">
-                Belum ada aktivitas.
-              </TableCell>
-            </TableRow>
-          )}
+          {(logs ?? []).length === 0 && <TableEmptyState colSpan={5}>Belum ada aktivitas.</TableEmptyState>}
         </TableBody>
       </Table>
 

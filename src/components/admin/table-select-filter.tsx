@@ -43,7 +43,7 @@ export function TableSelectFilter({
 
   return (
     <Select value={current} onValueChange={(v) => v && onChange(v)} items={items}>
-      <SelectTrigger className={className ?? "w-48"}>
+      <SelectTrigger className={className ?? "w-auto border-none bg-transparent shadow-none dark:bg-transparent"}>
         <SelectValue placeholder={placeholder} />
       </SelectTrigger>
       <SelectContent>

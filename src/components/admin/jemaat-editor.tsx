@@ -7,9 +7,12 @@ import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { ConfirmDeleteButton } from "@/components/admin/confirm-delete-button";
 import { HubunganKeluargaSelect } from "@/components/admin/hubungan-keluarga-select";
+import { InitialsAvatar } from "@/components/admin/initials-avatar";
 import { KeluargaSelect } from "@/components/admin/keluarga-select";
+import { RowActionsMenu } from "@/components/admin/row-actions-menu";
 import { SortableTableHead } from "@/components/admin/sortable-table-head";
 import { StatusBadge } from "@/components/admin/status-badge";
+import { TableEmptyState } from "@/components/admin/table-empty-state";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -31,6 +34,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -616,37 +620,35 @@ export function CatatanPastoralSection({
       {notes.length === 0 ? (
         <p className="text-sm text-muted-foreground">Belum ada catatan pastoral.</p>
       ) : (
-        <div className="overflow-hidden rounded-lg border">
-          <Table>
-            <TableHeader>
-              <TableRow className="hover:bg-transparent">
-                <TableHead className="whitespace-nowrap">Tanggal</TableHead>
-                <TableHead>Jenis</TableHead>
-                <TableHead>Penulis</TableHead>
-                <TableHead>Isi</TableHead>
-                {!disabled && <TableHead></TableHead>}
-              </TableRow>
-            </TableHeader>
-            <TableBody className="[&>tr:nth-child(even)]:bg-muted/40">
-              {notes.map((n) => (
-                <TableRow key={n.id}>
-                  <TableCell className="whitespace-nowrap align-top">{n.tanggal}</TableCell>
-                  <TableCell className="align-top">
-                    <Badge variant="secondary">{n.jenis}</Badge>
+        <Table>
+          <TableHeader>
+            <TableRow className="hover:bg-transparent">
+              <TableHead className="text-right whitespace-nowrap">Tanggal</TableHead>
+              <TableHead>Jenis</TableHead>
+              <TableHead>Penulis</TableHead>
+              <TableHead>Isi</TableHead>
+              {!disabled && <TableHead></TableHead>}
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {notes.map((n) => (
+              <TableRow key={n.id}>
+                <TableCell className="text-right whitespace-nowrap tabular-nums align-top">{n.tanggal}</TableCell>
+                <TableCell className="align-top">
+                  <Badge variant="secondary">{n.jenis}</Badge>
+                </TableCell>
+                <TableCell className="whitespace-nowrap align-top">{n.penulis_nama ?? "-"}</TableCell>
+                <TableCell className="whitespace-normal">{n.isi}</TableCell>
+                {!disabled && (
+                  <TableCell className="whitespace-nowrap text-right align-top">
+                    <EditCatatanDialog jemaatId={jemaatId} note={n} />
+                    <DeleteCatatanButton jemaatId={jemaatId} noteId={n.id} />
                   </TableCell>
-                  <TableCell className="whitespace-nowrap align-top">{n.penulis_nama ?? "-"}</TableCell>
-                  <TableCell className="whitespace-normal">{n.isi}</TableCell>
-                  {!disabled && (
-                    <TableCell className="whitespace-nowrap text-right align-top">
-                      <EditCatatanDialog jemaatId={jemaatId} note={n} />
-                      <DeleteCatatanButton jemaatId={jemaatId} noteId={n.id} />
-                    </TableCell>
-                  )}
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+                )}
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
       )}
       {!disabled && (
         <div className="space-y-2 rounded-lg border p-3">
@@ -668,8 +670,9 @@ export function CatatanPastoralSection({
   );
 }
 
-function DeleteJemaatRowButton({ jemaat }: { jemaat: JemaatProfile }) {
+function JemaatRow({ jemaat, disabled }: { jemaat: JemaatProfile; disabled?: boolean }) {
   const router = useRouter();
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
 
   function onDelete() {
@@ -687,32 +690,42 @@ function DeleteJemaatRowButton({ jemaat }: { jemaat: JemaatProfile }) {
     });
   }
 
-  return <ConfirmDeleteButton onConfirm={onDelete} isPending={isPending} title={`Hapus ${jemaat.nama}?`} />;
-}
-
-function JemaatRow({ jemaat, disabled }: { jemaat: JemaatProfile; disabled?: boolean }) {
   return (
-    <TableRow>
+    <TableRow className="group/row">
       <TableCell className="whitespace-nowrap font-mono text-xs">{jemaat.nomor_anggota ?? "-"}</TableCell>
-      <TableCell className="font-medium">{jemaat.nama}</TableCell>
+      <TableCell className="font-medium">
+        <div className="flex items-center gap-2.5">
+          <InitialsAvatar name={jemaat.nama} />
+          {jemaat.nama}
+        </div>
+      </TableCell>
       <TableCell>{jemaat.keluarga?.nama ?? "-"}</TableCell>
       <TableCell>{jemaat.wilayah?.nama ?? "-"}</TableCell>
       <TableCell>
         <StatusBadge status={jemaat.status_keanggotaan} />
       </TableCell>
       <TableCell className="whitespace-nowrap">{jemaat.no_hp ?? "-"}</TableCell>
-      <TableCell className="space-x-2 whitespace-nowrap text-right">
-        <Button
-          size="sm"
-          variant={disabled ? "link" : "outline"}
-          className={disabled ? "h-auto p-0" : undefined}
-          render={<Link href={`/admin/jemaat/${jemaat.id}`} />}
-          nativeButton={false}
-        >
-          {disabled ? "Lihat" : "Edit"}
-        </Button>
-        {!disabled && <DeleteJemaatRowButton jemaat={jemaat} />}
+      <TableCell className="text-right">
+        <RowActionsMenu>
+          <DropdownMenuItem render={<Link href={`/admin/jemaat/${jemaat.id}`} />}>
+            {disabled ? "Lihat" : "Edit"}
+          </DropdownMenuItem>
+          {!disabled && (
+            <DropdownMenuItem variant="destructive" onClick={() => setConfirmOpen(true)}>
+              Hapus
+            </DropdownMenuItem>
+          )}
+        </RowActionsMenu>
       </TableCell>
+      {!disabled && (
+        <ConfirmDeleteButton
+          open={confirmOpen}
+          onOpenChange={setConfirmOpen}
+          onConfirm={onDelete}
+          isPending={isPending}
+          title={`Hapus ${jemaat.nama}?`}
+        />
+      )}
     </TableRow>
   );
 }
@@ -791,38 +804,41 @@ export function AddJemaatDialog({
   );
 }
 
-export function JemaatEditor({ items, disabled }: { items: JemaatProfile[]; disabled?: boolean }) {
-  const headClassName = "uppercase tracking-wide text-[11px]";
-
+export function JemaatEditor({
+  items,
+  disabled,
+  emptyAction,
+}: {
+  items: JemaatProfile[];
+  disabled?: boolean;
+  /** Rendered as the empty state's primary action - passed in from the page
+   * since it already has the lists (labels/wilayah/keluarga) AddJemaatDialog
+   * needs, and renders its own copy above the table anyway. */
+  emptyAction?: React.ReactNode;
+}) {
   return (
-    <div className="overflow-hidden rounded-lg border">
-      <Table className="min-w-190">
-        <TableHeader>
-          <TableRow className="hover:bg-transparent">
-            <TableHead className={headClassName}>No. Anggota</TableHead>
-            <SortableTableHead sortKey="nama" className={headClassName}>
-              Nama
-            </SortableTableHead>
-            <TableHead className={headClassName}>Keluarga</TableHead>
-            <TableHead className={headClassName}>Wilayah</TableHead>
-            <TableHead className={headClassName}>Status</TableHead>
-            <TableHead className={headClassName}>Kontak</TableHead>
-            <TableHead></TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody className="[&>tr:nth-child(even)]:bg-muted/40">
-          {items.map((item) => (
-            <JemaatRow key={item.id} jemaat={item} disabled={disabled} />
-          ))}
-          {items.length === 0 && (
-            <TableRow>
-              <TableCell colSpan={7} className="text-sm text-muted-foreground">
-                Belum ada jemaat.
-              </TableCell>
-            </TableRow>
-          )}
-        </TableBody>
-      </Table>
-    </div>
+    <Table className="min-w-190">
+      <TableHeader>
+        <TableRow className="hover:bg-transparent">
+          <TableHead>No. Anggota</TableHead>
+          <SortableTableHead sortKey="nama">Nama</SortableTableHead>
+          <TableHead>Keluarga</TableHead>
+          <TableHead>Wilayah</TableHead>
+          <TableHead>Status</TableHead>
+          <TableHead>Kontak</TableHead>
+          <TableHead></TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {items.map((item) => (
+          <JemaatRow key={item.id} jemaat={item} disabled={disabled} />
+        ))}
+        {items.length === 0 && (
+          <TableEmptyState colSpan={7} action={emptyAction}>
+            Belum ada jemaat.
+          </TableEmptyState>
+        )}
+      </TableBody>
+    </Table>
   );
 }

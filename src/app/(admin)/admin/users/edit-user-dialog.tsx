@@ -10,7 +10,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import {
@@ -31,6 +30,8 @@ export function EditUserDialog({
   currentJemaatId,
   jemaatList,
   disabled,
+  open,
+  onOpenChange,
 }: {
   userId: string;
   userLabel: string;
@@ -39,9 +40,10 @@ export function EditUserDialog({
   currentJemaatId: string | null;
   jemaatList: { id: string; nama: string }[];
   disabled?: boolean;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
 }) {
   const router = useRouter();
-  const [open, setOpen] = useState(false);
   const [roleId, setRoleId] = useState(currentRoleId ?? "");
   const [jemaatId, setJemaatId] = useState(currentJemaatId ?? NONE);
   const [isPending, startTransition] = useTransition();
@@ -74,7 +76,7 @@ export function EditUserDialog({
       }
 
       toast.success("Tersimpan");
-      setOpen(false);
+      onOpenChange(false);
       router.refresh();
     });
   }
@@ -86,10 +88,7 @@ export function EditUserDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={<Button size="sm" variant="outline" />}>
-        {disabled ? "Lihat" : "Edit"}
-      </DialogTrigger>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>{userLabel}</DialogTitle>

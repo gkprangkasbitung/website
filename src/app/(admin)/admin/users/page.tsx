@@ -1,10 +1,10 @@
 import { PaginationBar } from "@/components/admin/pagination-bar";
 import { SortableTableHead } from "@/components/admin/sortable-table-head";
+import { TableEmptyState } from "@/components/admin/table-empty-state";
 import { TableSearchInput } from "@/components/admin/table-search-input";
 import {
   Table,
   TableBody,
-  TableCell,
   TableHead,
   TableHeader,
   TableRow,
@@ -13,9 +13,8 @@ import { parsePageSize } from "@/lib/pagination";
 import { getAuthenticatedUser, hasPermission, requirePermission } from "@/lib/rbac/dal";
 import { parseSortDir, parseSortKey } from "@/lib/sort";
 import { createClient } from "@/lib/supabase/server";
-import { DeleteUserButton } from "./delete-user-button";
-import { EditUserDialog } from "./edit-user-dialog";
 import { InviteUserDialog } from "./invite-user-dialog";
+import { UserRow } from "./user-row";
 
 const SORT_COLUMNS = ["full_name", "email"] as const;
 
@@ -76,41 +75,37 @@ export default async function UsersPage({
             <TableHead>Role</TableHead>
             <TableHead>Jemaat</TableHead>
             <TableHead></TableHead>
-            {canDelete && <TableHead className="w-1" />}
           </TableRow>
         </TableHeader>
         <TableBody>
           {(profiles ?? []).map((profile) => {
             const roleId = roleByUserId.get(profile.id);
             return (
-              <TableRow key={profile.id}>
-                <TableCell>{profile.full_name ?? "-"}</TableCell>
-                <TableCell>{profile.email}</TableCell>
-                <TableCell>{roleId ? (roleNameById.get(roleId) ?? "-") : "-"}</TableCell>
-                <TableCell>
-                  {profile.jemaat_id ? (jemaatNameById.get(profile.jemaat_id) ?? "-") : "-"}
-                </TableCell>
-                <TableCell>
-                  <EditUserDialog
-                    userId={profile.id}
-                    userLabel={profile.full_name ?? profile.email ?? "Pengguna"}
-                    currentRoleId={roleId}
-                    roles={roles ?? []}
-                    currentJemaatId={profile.jemaat_id}
-                    jemaatList={jemaatList ?? []}
-                    disabled={!canManage}
-                  />
-                </TableCell>
-                {canDelete && (
-                  <TableCell>
-                    {profile.id !== currentUser.id && (
-                      <DeleteUserButton userId={profile.id} email={profile.email} />
-                    )}
-                  </TableCell>
-                )}
-              </TableRow>
+              <UserRow
+                key={profile.id}
+                profileId={profile.id}
+                fullName={profile.full_name}
+                email={profile.email}
+                roleName={roleId ? (roleNameById.get(roleId) ?? null) : null}
+                jemaatName={profile.jemaat_id ? (jemaatNameById.get(profile.jemaat_id) ?? null) : null}
+                currentRoleId={roleId}
+                roles={roles ?? []}
+                currentJemaatId={profile.jemaat_id}
+                jemaatList={jemaatList ?? []}
+                canManage={canManage}
+                canDelete={canDelete}
+                isSelf={profile.id === currentUser.id}
+              />
             );
           })}
+          {(profiles ?? []).length === 0 && (
+            <TableEmptyState
+              colSpan={5}
+              action={canInvite && <InviteUserDialog roles={roles ?? []} jemaatList={jemaatList ?? []} />}
+            >
+              Belum ada pengguna.
+            </TableEmptyState>
+          )}
         </TableBody>
       </Table>
       <PaginationBar page={page} pageSize={pageSize} totalItems={count ?? 0} entryLabel="pengguna" />

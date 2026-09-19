@@ -1,8 +1,10 @@
 "use client";
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { Search } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
+import { cn } from "cn";
 
 /** A search box bound to ?q=, debounced so it doesn't navigate on every
  * keystroke. Matching is "contains" (case-insensitive) - done server-side
@@ -38,11 +40,14 @@ export function TableSearchInput({
   }, [value]);
 
   return (
-    <Input
-      value={value}
-      onChange={(e) => setValue(e.target.value)}
-      placeholder={placeholder}
-      className={className ?? "w-64"}
-    />
+    <div className={cn("relative", className ?? "w-64")}>
+      <Search className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground" />
+      <Input
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        placeholder={placeholder}
+        className="w-full border-none bg-transparent pl-8 shadow-none dark:bg-transparent"
+      />
+    </div>
   );
 }

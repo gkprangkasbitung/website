@@ -4,7 +4,9 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { ConfirmDeleteButton } from "@/components/admin/confirm-delete-button";
+import { RowActionsMenu } from "@/components/admin/row-actions-menu";
 import { SortableTableHead } from "@/components/admin/sortable-table-head";
+import { TableEmptyState } from "@/components/admin/table-empty-state";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -14,6 +16,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -26,9 +29,18 @@ import {
 } from "@/components/ui/table";
 import type { LabelJemaat } from "@/types/warta";
 
-function EditLabelDialog({ item, disabled }: { item: LabelJemaat; disabled?: boolean }) {
+function EditLabelDialog({
+  item,
+  disabled,
+  open,
+  onOpenChange,
+}: {
+  item: LabelJemaat;
+  disabled?: boolean;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
   const router = useRouter();
-  const [open, setOpen] = useState(false);
   const [nama, setNama] = useState(item.nama);
   const [isPending, startTransition] = useTransition();
 
@@ -47,16 +59,13 @@ function EditLabelDialog({ item, disabled }: { item: LabelJemaat; disabled?: boo
       }
 
       toast.success("Tersimpan");
-      setOpen(false);
+      onOpenChange(false);
       router.refresh();
     });
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={<Button size="sm" variant="outline" />}>
-        {disabled ? "Lihat" : "Edit"}
-      </DialogTrigger>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>{item.nama}</DialogTitle>
@@ -84,8 +93,10 @@ function EditLabelDialog({ item, disabled }: { item: LabelJemaat; disabled?: boo
   );
 }
 
-function DeleteLabelButton({ item }: { item: LabelJemaat }) {
+function LabelRow({ item, disabled }: { item: LabelJemaat; disabled?: boolean }) {
   const router = useRouter();
+  const [editOpen, setEditOpen] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
 
   function onDelete() {
@@ -103,17 +114,29 @@ function DeleteLabelButton({ item }: { item: LabelJemaat }) {
     });
   }
 
-  return <ConfirmDeleteButton onConfirm={onDelete} isPending={isPending} title={`Hapus label "${item.nama}"?`} />;
-}
-
-function LabelRow({ item, disabled }: { item: LabelJemaat; disabled?: boolean }) {
   return (
-    <TableRow>
+    <TableRow className="group/row">
       <TableCell>{item.nama}</TableCell>
-      <TableCell className="space-x-2 whitespace-nowrap">
-        <EditLabelDialog item={item} disabled={disabled} />
-        {!disabled && <DeleteLabelButton item={item} />}
+      <TableCell className="text-right">
+        <RowActionsMenu>
+          <DropdownMenuItem onClick={() => setEditOpen(true)}>{disabled ? "Lihat" : "Edit"}</DropdownMenuItem>
+          {!disabled && (
+            <DropdownMenuItem variant="destructive" onClick={() => setConfirmOpen(true)}>
+              Hapus
+            </DropdownMenuItem>
+          )}
+        </RowActionsMenu>
       </TableCell>
+      <EditLabelDialog item={item} disabled={disabled} open={editOpen} onOpenChange={setEditOpen} />
+      {!disabled && (
+        <ConfirmDeleteButton
+          open={confirmOpen}
+          onOpenChange={setConfirmOpen}
+          onConfirm={onDelete}
+          isPending={isPending}
+          title={`Hapus label "${item.nama}"?`}
+        />
+      )}
     </TableRow>
   );
 }
@@ -193,11 +216,9 @@ export function LabelJemaatEditor({ items, disabled }: { items: LabelJemaat[]; d
             <LabelRow key={item.id} item={item} disabled={disabled} />
           ))}
           {items.length === 0 && (
-            <TableRow>
-              <TableCell colSpan={2} className="text-sm text-muted-foreground">
-                Belum ada label.
-              </TableCell>
-            </TableRow>
+            <TableEmptyState colSpan={2} action={!disabled && <AddLabelDialog />}>
+              Belum ada label.
+            </TableEmptyState>
           )}
         </TableBody>
       </Table>

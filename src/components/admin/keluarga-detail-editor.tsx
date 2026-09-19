@@ -5,9 +5,13 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { HubunganKeluargaSelect } from "@/components/admin/hubungan-keluarga-select";
+import { InitialsAvatar } from "@/components/admin/initials-avatar";
 import { JemaatSelect } from "@/components/admin/jemaat-select";
+import { RowActionsMenu } from "@/components/admin/row-actions-menu";
 import { StatusBadge } from "@/components/admin/status-badge";
+import { TableEmptyState } from "@/components/admin/table-empty-state";
 import { Button } from "@/components/ui/button";
+import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { Label } from "@/components/ui/label";
 import {
   Table,
@@ -65,10 +69,11 @@ function MemberRow({ member, disabled }: { member: JemaatProfile; disabled?: boo
   }
 
   return (
-    <TableRow>
+    <TableRow className="group/row">
       <TableCell className="whitespace-nowrap font-mono text-xs">{member.nomor_anggota ?? "-"}</TableCell>
       <TableCell className="font-medium">
-        <Link href={`/admin/jemaat/${member.id}`} className="hover:underline">
+        <Link href={`/admin/jemaat/${member.id}`} className="flex items-center gap-2.5 hover:underline">
+          <InitialsAvatar name={member.nama} />
           {member.nama}
         </Link>
       </TableCell>
@@ -100,9 +105,11 @@ function MemberRow({ member, disabled }: { member: JemaatProfile; disabled?: boo
       </TableCell>
       {!disabled && (
         <TableCell className="text-right">
-          <Button size="sm" variant="ghost" onClick={onRemove} disabled={isPending}>
-            Keluarkan
-          </Button>
+          <RowActionsMenu>
+            <DropdownMenuItem variant="destructive" onClick={onRemove} disabled={isPending}>
+              Keluarkan
+            </DropdownMenuItem>
+          </RowActionsMenu>
         </TableCell>
       )}
     </TableRow>
@@ -179,33 +186,25 @@ export function KeluargaDetailEditor({
 }) {
   return (
     <div className="space-y-4">
-      <div className="overflow-hidden rounded-lg border">
-        <Table className="min-w-190">
-          <TableHeader>
-            <TableRow className="hover:bg-transparent">
-              <TableHead>No. Anggota</TableHead>
-              <TableHead>Nama</TableHead>
-              <TableHead>Wilayah</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Kontak</TableHead>
-              <TableHead>Hubungan Keluarga</TableHead>
-              <TableHead></TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody className="[&>tr:nth-child(even)]:bg-muted/40">
-            {members.map((member) => (
-              <MemberRow key={member.id} member={member} disabled={disabled} />
-            ))}
-            {members.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={7} className="text-sm text-muted-foreground">
-                  Belum ada anggota di keluarga ini.
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </div>
+      <Table className="min-w-190">
+        <TableHeader>
+          <TableRow className="hover:bg-transparent">
+            <TableHead>No. Anggota</TableHead>
+            <TableHead>Nama</TableHead>
+            <TableHead>Wilayah</TableHead>
+            <TableHead>Status</TableHead>
+            <TableHead>Kontak</TableHead>
+            <TableHead>Hubungan Keluarga</TableHead>
+            <TableHead></TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {members.map((member) => (
+            <MemberRow key={member.id} member={member} disabled={disabled} />
+          ))}
+          {members.length === 0 && <TableEmptyState colSpan={7}>Belum ada anggota di keluarga ini.</TableEmptyState>}
+        </TableBody>
+      </Table>
 
       {!disabled && <AddMemberForm keluargaNama={keluargaNama} availableJemaat={availableJemaat} />}
     </div>

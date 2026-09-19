@@ -58,7 +58,11 @@ export function AccountMenu({
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <form action={logout}>
-          <DropdownMenuItem variant="destructive" render={<button type="submit" className="w-full" />}>
+          <DropdownMenuItem
+            variant="destructive"
+            nativeButton
+            render={<button type="submit" className="w-full" />}
+          >
             <LogOutIcon /> Keluar
           </DropdownMenuItem>
         </form>

@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -19,6 +19,8 @@ export function PaginationBar({
   entryLabel = "data",
   pageParam = "page",
   pageSizeParam = "pageSize",
+  onPageChange,
+  onPageSizeChange,
 }: {
   page: number;
   pageSize: number;
@@ -29,15 +31,28 @@ export function PaginationBar({
    * table, so each gets its own independent page/pageSize state. */
   pageParam?: string;
   pageSizeParam?: string;
+  /** When provided, page/pageSize changes call these instead of pushing a
+   * new URL - used for a client-side-paginated table (e.g. a TanStack
+   * table holding its own page state) instead of the default server/
+   * URL-param mode. */
+  onPageChange?: (page: number) => void;
+  onPageSizeChange?: (pageSize: number) => void;
 }) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+  const controlled = Boolean(onPageChange || onPageSizeChange);
 
   function go(nextPage: number, nextPageSize: number = pageSize) {
+    const clamped = Math.min(Math.max(1, nextPage), totalPages);
+    if (controlled) {
+      if (nextPageSize !== pageSize) onPageSizeChange?.(nextPageSize);
+      onPageChange?.(clamped);
+      return;
+    }
     const params = new URLSearchParams(searchParams.toString());
-    params.set(pageParam, String(Math.min(Math.max(1, nextPage), totalPages)));
+    params.set(pageParam, String(clamped));
     params.set(pageSizeParam, String(nextPageSize));
     router.push(`${pathname}?${params.toString()}`);
   }
@@ -46,7 +61,7 @@ export function PaginationBar({
   const to = Math.min(page * pageSize, totalItems);
 
   return (
-    <div className="flex flex-wrap items-center justify-between gap-4 text-sm">
+    <div className="flex flex-wrap items-center justify-between gap-4 py-2 text-sm">
       <div className="flex items-center gap-2">
         <span className="text-muted-foreground">Tampilkan</span>
         <Select
@@ -54,7 +69,7 @@ export function PaginationBar({
           onValueChange={(v) => v && go(1, Number(v))}
           items={Object.fromEntries(PAGE_SIZE_OPTIONS.map((n) => [String(n), String(n)]))}
         >
-          <SelectTrigger className="w-18">
+          <SelectTrigger className="w-18 border-none bg-transparent shadow-none dark:bg-transparent">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -65,52 +80,22 @@ export function PaginationBar({
             ))}
           </SelectContent>
         </Select>
-        <span className="text-muted-foreground">data per halaman</span>
+        <span className="text-muted-foreground">per halaman</span>
       </div>
 
-      <p className="text-muted-foreground">
-        Menampilkan {from}-{to} dari {totalItems} {entryLabel}
+      <p className="text-muted-foreground tabular-nums">
+        {from}–{to} dari {totalItems} {entryLabel}
       </p>
 
-      <div className="flex items-center gap-1">
-        <Button
-          size="icon-sm"
-          variant="outline"
-          onClick={() => go(1)}
-          disabled={page <= 1}
-          aria-label="Halaman pertama"
-        >
-          <ChevronsLeft />
-        </Button>
-        <Button
-          size="icon-sm"
-          variant="outline"
-          onClick={() => go(page - 1)}
-          disabled={page <= 1}
-          aria-label="Halaman sebelumnya"
-        >
+      <div className="flex items-center gap-3">
+        <Button size="icon-sm" variant="ghost" onClick={() => go(page - 1)} disabled={page <= 1} aria-label="Halaman sebelumnya">
           <ChevronLeft />
         </Button>
-        <span className="px-2 whitespace-nowrap text-muted-foreground">
-          Halaman {page} dari {totalPages}
+        <span className="whitespace-nowrap text-muted-foreground tabular-nums">
+          {page} / {totalPages}
         </span>
-        <Button
-          size="icon-sm"
-          variant="outline"
-          onClick={() => go(page + 1)}
-          disabled={page >= totalPages}
-          aria-label="Halaman berikutnya"
-        >
+        <Button size="icon-sm" variant="ghost" onClick={() => go(page + 1)} disabled={page >= totalPages} aria-label="Halaman berikutnya">
           <ChevronRight />
-        </Button>
-        <Button
-          size="icon-sm"
-          variant="outline"
-          onClick={() => go(totalPages)}
-          disabled={page >= totalPages}
-          aria-label="Halaman terakhir"
-        >
-          <ChevronsRight />
         </Button>
       </div>
     </div>

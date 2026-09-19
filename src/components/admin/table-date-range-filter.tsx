@@ -30,6 +30,7 @@ export function TableDateRangeFilter({ label = "Tanggal" }: { label?: string }) 
           type="date"
           defaultValue={searchParams.get("from") ?? ""}
           onChange={(e) => update("from", e.target.value)}
+          className="border-none bg-transparent shadow-none dark:bg-transparent"
         />
       </div>
       <div className="space-y-1">
@@ -38,6 +39,7 @@ export function TableDateRangeFilter({ label = "Tanggal" }: { label?: string }) 
           type="date"
           defaultValue={searchParams.get("to") ?? ""}
           onChange={(e) => update("to", e.target.value)}
+          className="border-none bg-transparent shadow-none dark:bg-transparent"
         />
       </div>
     </div>

@@ -29,7 +29,7 @@ export function AdminNav({ items, onNavigate }: { items: AdminNavItem[]; onNavig
               href={item.href}
               onClick={onNavigate}
               className={cn(
-                "block border-l-2 px-3 py-1.5 text-sm transition-colors",
+                "block border-l-2 px-3 py-2 text-sm transition-colors",
                 active
                   ? "border-sidebar-primary bg-sidebar-accent font-semibold text-sidebar-accent-foreground"
                   : "border-transparent text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",

@@ -12,10 +12,12 @@ export function SortableTableHead({
   sortKey,
   children,
   className,
+  align = "left",
 }: {
   sortKey: string;
   children: React.ReactNode;
   className?: string;
+  align?: "left" | "right";
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -42,11 +44,11 @@ export function SortableTableHead({
 
   return (
     <TableHead
-      className={cn("cursor-pointer select-none hover:text-foreground", className)}
+      className={cn("cursor-pointer select-none hover:text-foreground", align === "right" && "text-right", className)}
       onClick={onClick}
       aria-sort={isActive ? (currentDir === "asc" ? "ascending" : "descending") : "none"}
     >
-      <span className="inline-flex items-center gap-1">
+      <span className={cn("inline-flex items-center gap-1", align === "right" && "w-full justify-end")}>
         {children}
         {isActive ? (
           currentDir === "asc" ? (

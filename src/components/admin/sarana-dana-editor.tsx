@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
+import { RowActionsMenu } from "@/components/admin/row-actions-menu";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -11,8 +12,8 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
+import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -26,9 +27,18 @@ import {
 import { formatRupiah } from "@/lib/format";
 import type { SaranaDanaBalance } from "@/types/warta";
 
-function EditKeteranganDialog({ item, disabled }: { item: SaranaDanaBalance; disabled?: boolean }) {
+function EditKeteranganDialog({
+  item,
+  disabled,
+  open,
+  onOpenChange,
+}: {
+  item: SaranaDanaBalance;
+  disabled?: boolean;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
   const router = useRouter();
-  const [open, setOpen] = useState(false);
   const [keterangan, setKeterangan] = useState(item.keterangan ?? "");
   const [isPending, startTransition] = useTransition();
 
@@ -47,16 +57,13 @@ function EditKeteranganDialog({ item, disabled }: { item: SaranaDanaBalance; dis
       }
 
       toast.success(`${item.name} tersimpan`);
-      setOpen(false);
+      onOpenChange(false);
       router.refresh();
     });
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={<Button size="sm" variant="outline" />}>
-        {disabled ? "Lihat" : "Edit"}
-      </DialogTrigger>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>{item.name}</DialogTitle>
@@ -86,22 +93,22 @@ function EditKeteranganDialog({ item, disabled }: { item: SaranaDanaBalance; dis
 }
 
 function SaranaDanaRow({ item, disabled }: { item: SaranaDanaBalance; disabled?: boolean }) {
+  const [editOpen, setEditOpen] = useState(false);
+
   return (
-    <TableRow>
+    <TableRow className="group/row">
       <TableCell className="font-medium">{item.name}</TableCell>
-      <TableCell className="font-medium">{formatRupiah(item.saldo)}</TableCell>
+      <TableCell className="text-right font-medium tabular-nums">{formatRupiah(item.saldo)}</TableCell>
       <TableCell className="max-w-64 truncate">{item.keterangan ?? "-"}</TableCell>
-      <TableCell className="space-x-2 whitespace-nowrap">
-        <EditKeteranganDialog item={item} disabled={disabled} />
-        <Button
-          size="sm"
-          variant="ghost"
-          render={<Link href={`/admin/sarana-dana/${item.key}`} />}
-          nativeButton={false}
-        >
-          Lihat Transaksi
-        </Button>
+      <TableCell className="text-right">
+        <RowActionsMenu>
+          <DropdownMenuItem onClick={() => setEditOpen(true)}>{disabled ? "Lihat" : "Edit"}</DropdownMenuItem>
+          <DropdownMenuItem render={<Link href={`/admin/sarana-dana/${item.key}`} />}>
+            Lihat Transaksi
+          </DropdownMenuItem>
+        </RowActionsMenu>
       </TableCell>
+      <EditKeteranganDialog item={item} disabled={disabled} open={editOpen} onOpenChange={setEditOpen} />
     </TableRow>
   );
 }
@@ -112,7 +119,7 @@ export function SaranaDanaEditor({ items, disabled }: { items: SaranaDanaBalance
       <TableHeader>
         <TableRow>
           <TableHead>Nama</TableHead>
-          <TableHead>Saldo Saat Ini</TableHead>
+          <TableHead className="text-right">Saldo Saat Ini</TableHead>
           <TableHead>Keterangan</TableHead>
           <TableHead></TableHead>
         </TableRow>

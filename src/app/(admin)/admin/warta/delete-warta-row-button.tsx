@@ -8,7 +8,17 @@ import { ConfirmDeleteButton } from "@/components/admin/confirm-delete-button";
 /** Quick delete straight from the Warta list row - same endpoint as
  * `DeleteWartaButton` on the detail page, but refreshes in place instead
  * of navigating away (we're already on the list). */
-export function DeleteWartaRowButton({ wartaId, judul }: { wartaId: string; judul: string }) {
+export function DeleteWartaRowButton({
+  wartaId,
+  judul,
+  open,
+  onOpenChange,
+}: {
+  wartaId: string;
+  judul: string;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
@@ -28,6 +38,8 @@ export function DeleteWartaRowButton({ wartaId, judul }: { wartaId: string; judu
 
   return (
     <ConfirmDeleteButton
+      open={open}
+      onOpenChange={onOpenChange}
       onConfirm={onDelete}
       isPending={isPending}
       title={`Hapus "${judul}"?`}

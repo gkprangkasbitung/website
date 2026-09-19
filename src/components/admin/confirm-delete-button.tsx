@@ -16,7 +16,11 @@ import type { VariantProps } from "class-variance-authority";
 
 /** A "Hapus" trigger that always confirms before firing, so a stray click
  * can't destroy a row outright - every delete action in the admin should
- * go through this instead of calling its handler directly. */
+ * go through this instead of calling its handler directly.
+ *
+ * Pass `open`/`onOpenChange` to drive it from elsewhere (e.g. a
+ * RowActionsMenu item) instead of rendering its own trigger button - used
+ * when "Hapus" lives inside a dropdown menu rather than standing alone. */
 export function ConfirmDeleteButton({
   onConfirm,
   isPending,
@@ -26,6 +30,8 @@ export function ConfirmDeleteButton({
   pendingLabel = "Menghapus...",
   variant = "ghost",
   size = "sm",
+  open,
+  onOpenChange,
 }: {
   onConfirm: () => void;
   isPending?: boolean;
@@ -35,24 +41,38 @@ export function ConfirmDeleteButton({
   pendingLabel?: string;
   variant?: VariantProps<typeof buttonVariants>["variant"];
   size?: VariantProps<typeof buttonVariants>["size"];
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }) {
+  const confirmDialog = (
+    <AlertDialogContent>
+      <AlertDialogHeader>
+        <AlertDialogTitle>{title}</AlertDialogTitle>
+        <AlertDialogDescription>{description}</AlertDialogDescription>
+      </AlertDialogHeader>
+      <AlertDialogFooter>
+        <AlertDialogCancel>Batal</AlertDialogCancel>
+        <AlertDialogAction onClick={onConfirm} disabled={isPending}>
+          {isPending ? pendingLabel : label}
+        </AlertDialogAction>
+      </AlertDialogFooter>
+    </AlertDialogContent>
+  );
+
+  if (onOpenChange) {
+    return (
+      <AlertDialog open={open} onOpenChange={onOpenChange}>
+        {confirmDialog}
+      </AlertDialog>
+    );
+  }
+
   return (
     <AlertDialog>
       <AlertDialogTrigger render={<Button type="button" size={size} variant={variant} disabled={isPending} />}>
         {label}
       </AlertDialogTrigger>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>{title}</AlertDialogTitle>
-          <AlertDialogDescription>{description}</AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel>Batal</AlertDialogCancel>
-          <AlertDialogAction onClick={onConfirm} disabled={isPending}>
-            {isPending ? pendingLabel : label}
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
+      {confirmDialog}
     </AlertDialog>
   );
 }

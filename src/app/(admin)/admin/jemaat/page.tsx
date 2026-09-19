@@ -93,7 +93,19 @@ export default async function JemaatPage({
         </div>
         <ExportCsvButton />
       </div>
-      <JemaatEditor items={items} disabled={!canEdit} />
+      <JemaatEditor
+        items={items}
+        disabled={!canEdit}
+        emptyAction={
+          canEdit && (
+            <AddJemaatDialog
+              allLabels={allLabels ?? []}
+              allWilayah={allWilayah ?? []}
+              allKeluarga={allKeluarga ?? []}
+            />
+          )
+        }
+      />
       <PaginationBar page={page} pageSize={pageSize} totalItems={count ?? 0} entryLabel="jiwa" />
     </div>
   );

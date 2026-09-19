@@ -12,11 +12,19 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Button } from "@/components/ui/button";
 
-export function DeleteUserButton({ userId, email }: { userId: string; email: string | null }) {
+export function DeleteUserButton({
+  userId,
+  email,
+  open,
+  onOpenChange,
+}: {
+  userId: string;
+  email: string | null;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
@@ -36,8 +44,7 @@ export function DeleteUserButton({ userId, email }: { userId: string; email: str
   }
 
   return (
-    <AlertDialog>
-      <AlertDialogTrigger render={<Button size="sm" variant="ghost" />}>Hapus</AlertDialogTrigger>
+    <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>Hapus akun {email ?? "ini"}?</AlertDialogTitle>
