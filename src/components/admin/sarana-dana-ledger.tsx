@@ -5,7 +5,9 @@ import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { ConfirmDeleteButton } from "@/components/admin/confirm-delete-button";
 import { JemaatSelect } from "@/components/admin/jemaat-select";
+import { RowActionsMenu } from "@/components/admin/row-actions-menu";
 import { SortableTableHead } from "@/components/admin/sortable-table-head";
+import { TableEmptyState } from "@/components/admin/table-empty-state";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -16,6 +18,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -42,18 +45,24 @@ function EditTransactionDialog({
   itemId,
   itemKey,
   transaction,
+  jemaatList,
+  open,
+  onOpenChange,
 }: {
   itemId: string;
   itemKey: string;
   transaction: SaranaDanaTransactionWithJemaat;
+  jemaatList: JemaatWithLabels[];
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
 }) {
   const router = useRouter();
   const isPersembahan = itemKey === PERSEMBAHAN_KEY;
-  const [open, setOpen] = useState(false);
   const [tanggal, setTanggal] = useState(transaction.tanggal);
   const [tipe, setTipe] = useState<SaranaDanaTransactionType>(transaction.tipe);
   const [jumlah, setJumlah] = useState(String(transaction.jumlah));
   const [keterangan, setKeterangan] = useState(transaction.keterangan ?? "");
+  const [jemaatId, setJemaatId] = useState<string | null>(transaction.jemaat_id);
   const [isPending, startTransition] = useTransition();
 
   function onSave() {
@@ -71,6 +80,7 @@ function EditTransactionDialog({
           tipe: isPersembahan ? "masuk" : tipe,
           jumlah,
           keterangan,
+          jemaat_id: isPersembahan ? jemaatId : null,
         }),
       });
 
@@ -81,7 +91,7 @@ function EditTransactionDialog({
       }
 
       toast.success("Transaksi tersimpan");
-      setOpen(false);
+      onOpenChange(false);
       router.refresh();
     });
   }
@@ -90,16 +100,16 @@ function EditTransactionDialog({
     <Dialog
       open={open}
       onOpenChange={(next) => {
-        setOpen(next);
+        onOpenChange(next);
         if (next) {
           setTanggal(transaction.tanggal);
           setTipe(transaction.tipe);
           setJumlah(String(transaction.jumlah));
           setKeterangan(transaction.keterangan ?? "");
+          setJemaatId(transaction.jemaat_id);
         }
       }}
     >
-      <DialogTrigger render={<Button size="sm" variant="outline" />}>Edit</DialogTrigger>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Edit Transaksi</DialogTitle>
@@ -139,6 +149,18 @@ function EditTransactionDialog({
               </Select>
             </div>
           )}
+          {isPersembahan && (
+            <div className="space-y-2">
+              <Label>Jemaat (opsional)</Label>
+              <JemaatSelect
+                value={jemaatId}
+                onChange={setJemaatId}
+                jemaatList={jemaatList}
+                placeholder="Pilih jemaat (opsional)"
+                disabled={isPending}
+              />
+            </div>
+          )}
           <div className="space-y-2">
             <Label htmlFor="edit-jumlah">Jumlah</Label>
             <Input
@@ -175,14 +197,20 @@ function TransactionRow({
   itemId,
   itemKey,
   transaction,
+  showJemaat,
+  jemaatList,
   disabled,
 }: {
   itemId: string;
   itemKey: string;
   transaction: SaranaDanaTransactionWithJemaat;
+  showJemaat: boolean;
+  jemaatList: JemaatWithLabels[];
   disabled?: boolean;
 }) {
   const router = useRouter();
+  const [editOpen, setEditOpen] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
 
   function onDelete() {
@@ -203,31 +231,50 @@ function TransactionRow({
   }
 
   return (
-    <TableRow>
-      <TableCell>{transaction.tanggal}</TableCell>
+    <TableRow className="group/row">
+      <TableCell className="text-right tabular-nums">{transaction.tanggal}</TableCell>
       <TableCell>
-        <Badge variant={transaction.tipe === "masuk" ? "default" : "destructive"}>
+        <Badge variant={transaction.tipe === "masuk" ? "accent" : "destructive"}>
           {transaction.tipe === "masuk" ? "Pemasukan" : "Pengeluaran"}
         </Badge>
       </TableCell>
-      <TableCell className={transaction.tipe === "masuk" ? "text-foreground" : "text-destructive"}>
+      <TableCell
+        className={`text-right tabular-nums ${transaction.tipe === "masuk" ? "text-foreground" : "text-destructive"}`}
+      >
         {transaction.tipe === "masuk" ? "+" : "-"}
         {formatRupiah(transaction.jumlah)}
       </TableCell>
-      <TableCell>{transaction.jemaat?.nama ?? "-"}</TableCell>
+      {showJemaat && <TableCell>{transaction.jemaat?.nama ?? "-"}</TableCell>}
       <TableCell>{transaction.keterangan ?? "-"}</TableCell>
-      <TableCell className="space-x-2 whitespace-nowrap">
+      <TableCell className="text-right">
         {!disabled && (
-          <>
-            <EditTransactionDialog itemId={itemId} itemKey={itemKey} transaction={transaction} />
-            <ConfirmDeleteButton
-              onConfirm={onDelete}
-              isPending={isPending}
-              title={`Hapus transaksi ${formatRupiah(transaction.jumlah)} pada ${transaction.tanggal}?`}
-            />
-          </>
+          <RowActionsMenu>
+            <DropdownMenuItem onClick={() => setEditOpen(true)}>Edit</DropdownMenuItem>
+            <DropdownMenuItem variant="destructive" onClick={() => setConfirmOpen(true)}>
+              Hapus
+            </DropdownMenuItem>
+          </RowActionsMenu>
         )}
       </TableCell>
+      {!disabled && (
+        <>
+          <EditTransactionDialog
+            itemId={itemId}
+            itemKey={itemKey}
+            transaction={transaction}
+            jemaatList={jemaatList}
+            open={editOpen}
+            onOpenChange={setEditOpen}
+          />
+          <ConfirmDeleteButton
+            open={confirmOpen}
+            onOpenChange={setConfirmOpen}
+            onConfirm={onDelete}
+            isPending={isPending}
+            title={`Hapus transaksi ${formatRupiah(transaction.jumlah)} pada ${transaction.tanggal}?`}
+          />
+        </>
+      )}
     </TableRow>
   );
 }
@@ -384,6 +431,8 @@ export function SaranaDanaLedger({
   jemaatList: JemaatWithLabels[];
   disabled?: boolean;
 }) {
+  const showJemaat = itemKey === PERSEMBAHAN_KEY;
+
   return (
     <div className="space-y-4">
       {!disabled && (
@@ -394,24 +443,35 @@ export function SaranaDanaLedger({
       <Table>
         <TableHeader>
           <TableRow>
-            <SortableTableHead sortKey="tanggal">Tanggal</SortableTableHead>
+            <SortableTableHead sortKey="tanggal" align="right">Tanggal</SortableTableHead>
             <SortableTableHead sortKey="tipe">Tipe</SortableTableHead>
-            <SortableTableHead sortKey="jumlah">Jumlah</SortableTableHead>
-            <TableHead>Jemaat</TableHead>
+            <SortableTableHead sortKey="jumlah" align="right">Jumlah</SortableTableHead>
+            {showJemaat && <TableHead>Jemaat</TableHead>}
             <SortableTableHead sortKey="keterangan">Keterangan</SortableTableHead>
             <TableHead></TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {transactions.map((t) => (
-            <TransactionRow key={t.id} itemId={itemId} itemKey={itemKey} transaction={t} disabled={disabled} />
+            <TransactionRow
+              key={t.id}
+              itemId={itemId}
+              itemKey={itemKey}
+              transaction={t}
+              showJemaat={showJemaat}
+              jemaatList={jemaatList}
+              disabled={disabled}
+            />
           ))}
           {transactions.length === 0 && (
-            <TableRow>
-              <TableCell colSpan={6} className="text-sm text-muted-foreground">
-                Belum ada transaksi.
-              </TableCell>
-            </TableRow>
+            <TableEmptyState
+              colSpan={showJemaat ? 6 : 5}
+              action={
+                !disabled && <AddTransactionDialog itemId={itemId} itemKey={itemKey} jemaatList={jemaatList} />
+              }
+            >
+              Belum ada transaksi.
+            </TableEmptyState>
           )}
         </TableBody>
       </Table>

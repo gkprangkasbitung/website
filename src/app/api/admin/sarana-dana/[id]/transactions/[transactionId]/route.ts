@@ -40,6 +40,20 @@ export async function PATCH(
   }
 
   const supabase = await createClient();
+
+  if ("jemaat_id" in body) {
+    // Only Persembahan Bulanan may be tied to a jemaat - enforced
+    // server-side so the client-side restriction can't be bypassed.
+    const { data: item } = await supabase
+      .from("sarana_dana_items")
+      .select("key")
+      .eq("id", itemId)
+      .maybeSingle();
+    const isPersembahan = item?.key === "persembahan_bulanan";
+    const jemaatId = body.jemaat_id;
+    update.jemaat_id = isPersembahan && typeof jemaatId === "string" ? jemaatId : null;
+  }
+
   const { data, error } = await supabase
     .from("sarana_dana_transactions")
     .update(update)
